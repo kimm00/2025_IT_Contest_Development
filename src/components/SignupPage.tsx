@@ -5,8 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { signup } from "../utils/auth";
-import { toast } from "sonner;
-import { awardBadge } from "../utils/badges";
+import { toast } from "sonner";
 
 interface SignupPageProps {
   onSignupSuccess: () => void;
@@ -21,7 +20,7 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -36,17 +35,21 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
 
     setLoading(true);
 
-    setTimeout(() => {
-      if (signup(email, password, name)) {
-        // Goal Setter 뱃지 부여
-        awardBadge(email, 'goal_setter');
+    try {
+      const success = await signup(email, password, name);
+
+      if (success) {
         toast.success("회원가입이 완료되었습니다! 🎯 첫 뱃지를 획득했어요!");
-        onSignupSuccess();
-      } else {
-        toast.error("이미 사용 중인 이메일입니다.");
+        onSignupSuccess(); // 성공 시 페이지 이동
       }
+
+    } catch (error) {
+      // 오류 처리
+      console.error("Signup Page Error:", error);
+      toast.error("예상치 못한 오류가 발생했습니다.");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
