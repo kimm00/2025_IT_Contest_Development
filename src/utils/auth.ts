@@ -186,15 +186,16 @@ export async function updateCurrentUserProfile(updates: Partial<Omit<User, 'uid'
  * 건강 기록 추가 및 기부금 적립 (F-02, F-03)
  * [중요] '기록 추가'와 '기부금 적립'을 하나의 트랜잭션으로 처리
  */
-export async function addHealthLog(logData: Omit<HealthLog, 'id' | 'userId'>): Promise<boolean> {
+export async function addHealthLog(logData: Omit<HealthLog, 'id' | 'userId'>): Promise<'first_donation' | 'normal_log' | null> {
   const user = auth.currentUser;
   if (!user) {
     toast.error('로그인이 필요합니다.');
-    return false;
+    return null;
   }
 
   const userDocRef = doc(db, 'users', user.uid);
-  
+  let wasFirstDonation = false;
+
   try {
     // 트랜잭션 시작
     await runTransaction(db, async (transaction) => {
@@ -215,8 +216,7 @@ export async function addHealthLog(logData: Omit<HealthLog, 'id' | 'userId'>): P
       if (lastRecordDate !== today) {
         newTotalDonation += 100; // 당일 첫 기록인 경우 100원 적립
         newLastRecordDate = new Date().toISOString();
-        
-        // (뱃지 로직도 여기에 추가 가능: e.g., if (newTotalDonation >= 10000) ...)
+        wasFirstDonation = true; // 2. 플래그를 true로
       }
       
       // 3. 새 건강 기록 문서 생성 (트랜잭션)
@@ -225,9 +225,7 @@ export async function addHealthLog(logData: Omit<HealthLog, 'id' | 'userId'>): P
         ...logData,
         userId: user.uid, // userId 추가
         recordedAt: new Date().toISOString(),
-        // id는 Firestore가 자동 생성하므로 Omit<...>에서 'id'도 빼는게 나음
-        // 하지만 HealthLog 타입이 id를 요구하므로, newLogRef.id를 넣어도 됨
-        id: newLogRef.id, 
+        id: newLogRef.id, // HealthLog 타입이 id를 가지므로 추가
       });
 
       // 4. 사용자 프로필 업데이트 (트랜잭션)
@@ -238,13 +236,13 @@ export async function addHealthLog(logData: Omit<HealthLog, 'id' | 'userId'>): P
     });
     
     // 트랜잭션 성공
-    toast.success('건강 기록이 저장되었습니다!');
-    return true;
+    // 3. 플래그에 따라 다른 값 반환
+    return wasFirstDonation ? 'first_donation' : 'normal_log';
 
   } catch (error) {
     toast.error('기록 저장 중 오류가 발생했습니다.');
     console.error("Add Health Log Transaction Error: ", error);
-    return false;
+    return null; // 실패
   }
 }
 
