@@ -43,37 +43,33 @@ export default function Dashboard() {
       setHealthLogs(logs);
 
       if (profile && logs) {
-        checkBadges(profile.email, logs, profile.totalDonation);
+        // 뱃지 체크
+        const totalRecords = logs.length;
+        const recordDates = logs.map(log => log.recordedAt);
+        const consecutiveDays = calculateConsecutiveDays(recordDates);
+        const daysSince = daysSinceLastRecord(recordDates);
+        
+        const hasBloodSugar = logs.some(log => log.type === 'blood_sugar');
+        const hasBloodPressure = logs.some(log => log.type === 'blood_pressure');
+        
+        const earnedBadges = await checkAndAwardBadges(
+          profile,
+          totalRecords,
+          consecutiveDays,
+          hasBloodSugar,
+          hasBloodPressure,
+          daysSince
+        );
+        
+        if (earnedBadges.length > 0) {
+          setNewBadges(earnedBadges);
+        }
       }
       
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkBadges = (email: string, logs: HealthLog[], totalDonation: number) => {
-    const totalRecords = logs.length;
-    const recordDates = logs.map(log => log.recordedAt);
-    const consecutiveDays = calculateConsecutiveDays(recordDates);
-    const daysSince = daysSinceLastRecord(recordDates);
-    
-    const hasBloodSugar = logs.some(log => log.type === 'blood_sugar');
-    const hasBloodPressure = logs.some(log => log.type === 'blood_pressure');
-    
-    const earnedBadges = checkAndAwardBadges(
-      email,
-      totalRecords,
-      consecutiveDays,
-      totalDonation,
-      hasBloodSugar,
-      hasBloodPressure,
-      daysSince
-    );
-    
-    if (earnedBadges.length > 0) {
-      setNewBadges(earnedBadges);
     }
   };
 

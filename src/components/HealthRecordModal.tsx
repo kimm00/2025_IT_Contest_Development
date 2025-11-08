@@ -81,7 +81,7 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && resetFormAndClose()}>
+    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && resetFormAndClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
