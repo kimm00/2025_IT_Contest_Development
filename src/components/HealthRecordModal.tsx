@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { addHealthLog, getCurrentUser } from "../utils/auth";
+import { addHealthLog, type HealthLog } from "../utils/auth";
 import { toast } from "sonner";
 
 interface HealthRecordModalProps {
@@ -17,19 +17,12 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
   const [bloodSugar, setBloodSugar] = useState("");
   const [systolic, setSystolic] = useState("");
   const [diastolic, setDiastolic] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const user = getCurrentUser();
-    if (!user) {
-      toast.error("로그인이 필요합니다.");
-      return;
-    }
 
-    const today = new Date().toISOString().split('T')[0];
-    const lastRecordDate = user.lastRecordDate?.split('T')[0];
-    const isFirstToday = lastRecordDate !== today;
+    let logData: Omit<HealthLog, 'id' | 'userId'>;
 
     if (recordType === 'blood_sugar') {
       const value = parseFloat(bloodSugar);
@@ -37,53 +30,58 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
         toast.error("올바른 혈당 수치를 입력해주세요.");
         return;
       }
-
-      addHealthLog({
-        userId: user.email,
+      logData = {
         type: 'blood_sugar',
         value,
         recordedAt: new Date().toISOString(),
-      });
-
-      if (isFirstToday) {
-        toast.success(`혈당 기록이 완료되었습니다! 🎉\n오늘의 첫 기록으로 100원이 기부되었습니다.`);
-      } else {
-        toast.success("혈당 기록이 완료되었습니다!");
-      }
+      };
     } else {
       const sys = parseFloat(systolic);
       const dia = parseFloat(diastolic);
-      
       if (isNaN(sys) || isNaN(dia) || sys <= 0 || dia <= 0) {
         toast.error("올바른 혈압 수치를 입력해주세요.");
         return;
       }
-
-      addHealthLog({
-        userId: user.email,
+      logData = {
         type: 'blood_pressure',
         systolic: sys,
         diastolic: dia,
         recordedAt: new Date().toISOString(),
-      });
-
-      if (isFirstToday) {
-        toast.success(`혈압 기록이 완료되었습니다! 🎉\n오늘의 첫 기록으로 100원이 기부되었습니다.`);
-      } else {
-        toast.success("혈압 기록이 완료되었습니다!");
-      }
+      };
     }
 
-    // Reset form
+    setLoading(true);
+
+    try {
+      const result = await addHealthLog(logData);
+
+      if (result === 'first_donation') {
+        toast.success(`기록이 완료되었습니다! 🎉\n오늘의 첫 기록으로 100원이 기부되었습니다.`);
+      } else if (result === 'normal_log') {
+        toast.success("기록이 완료되었습니다!");
+      }
+
+      if (result) {
+        resetFormAndClose();
+        onSuccess();
+      }
+    } catch (error) {
+      console.error("Handle Submit Error:", error);
+      toast.error("기록 저장 중 예기치 못한 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetFormAndClose = () => {
     setBloodSugar("");
     setSystolic("");
     setDiastolic("");
-    onSuccess();
     onClose();
-  };
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && resetFormAndClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -148,11 +146,11 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={resetFormAndClose} disabled={loading}>
               취소
             </Button>
-            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-              기록하기
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
+              {loading ? "저장 중..." : "기록하기"}
             </Button>
           </DialogFooter>
         </form>

@@ -2,32 +2,54 @@ import { useState, useEffect } from "react";
 import { Activity, Droplet, Heart, Plus, TrendingUp } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { getCurrentUser, getUserHealthLogs, type HealthLog } from "../utils/auth";
+import { 
+  getCurrentUserProfile, 
+  getUserHealthLogs, 
+  type HealthLog, 
+  type User
+} from "../utils/auth";
+import { auth } from "../firebase";
+
 import HealthRecordModal from "./HealthRecordModal";
 import BadgeNotification from "./BadgeNotification";
 import { checkAndAwardBadges, calculateConsecutiveDays, daysSinceLastRecord } from "../utils/badges";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<User | null>(null);
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recordType, setRecordType] = useState<'blood_sugar' | 'blood_pressure'>('blood_sugar');
   const [newBadges, setNewBadges] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadHealthLogs();
   }, []);
 
-  const loadHealthLogs = () => {
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      const logs = getUserHealthLogs(currentUser.email);
+  const loadHealthLogs = async () => {
+    const authUser = auth.currentUser;
+    if (!authUser) {
+      setLoading(false);
+      return; 
+    }
+
+    try {
+      const [profile, logs] = await Promise.all([
+        getCurrentUserProfile(authUser.uid),
+        getUserHealthLogs()
+      ]);
+
+      setUser(profile);
       setHealthLogs(logs);
-      // 사용자 정보 새로고침 (기부금 업데이트 반영)
-      setUser(currentUser);
+
+      if (profile && logs) {
+        checkBadges(profile.email, logs, profile.totalDonation);
+      }
       
-      // 뱃지 체크
-      checkBadges(currentUser.email, logs, currentUser.totalDonation);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,18 +100,26 @@ export default function Dashboard() {
     ).length;
   };
 
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">로딩 중...</div>;
+  }
+  
+  if (!user) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">사용자 정보를 불러오지 못했습니다.</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* 헤더 통계 */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <h1 className="text-3xl mb-8">안녕하세요, {user?.email.split('@')[0]}님! 👋</h1>
+          <h1 className="text-3xl mb-8">안녕하세요, {user.name}님! 👋</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
               <CardHeader className="pb-3">
                 <CardDescription className="text-white/80">누적 기부금</CardDescription>
-                <CardTitle className="text-3xl">₩{user?.totalDonation.toLocaleString()}</CardTitle>
+                <CardTitle className="text-3xl">₩{user.totalDonation.toLocaleString()}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2 text-sm text-white/80">

@@ -2,19 +2,30 @@ import { useEffect, useState } from "react";
 import { Activity, Calendar, Droplet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { getCurrentUser, getUserHealthLogs, type HealthLog } from "../utils/auth";
+import { getUserHealthLogs, type HealthLog } from "../utils/auth";
+import { toast } from "sonner";
 
 export default function HealthReport() {
-  const [user] = useState(getCurrentUser());
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('week');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      const logs = getUserHealthLogs(user.email);
-      setHealthLogs(logs);
-    }
-  }, [user]);
+    const loadLogs = async () => {
+      setLoading(true);
+      try {
+        const logs = await getUserHealthLogs();
+        setHealthLogs(logs);
+      } catch (error) {
+        console.error("Failed to load health reports:", error);
+        toast.error("리포트 데이터를 불러오는 데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadLogs();
+  }, []);
 
   const getFilteredLogs = () => {
     const now = new Date();
@@ -61,6 +72,10 @@ export default function HealthReport() {
 
   const bloodSugarData = getChartData('blood_sugar');
   const bloodPressureData = getChartData('blood_pressure');
+
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">리포트 로딩 중...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
@@ -129,7 +144,7 @@ export default function HealthReport() {
               </div>
               <CardTitle className="text-3xl">
                 {getAverageValue('blood_pressure') || '-'}
-                {getAverageValue('blood_pressure') !== 0 ? ' mmHg' : ''}
+                {getAverageValue('blood_pressure') !== '0/0' && getAverageValue('blood_pressure') !== 0 ? ' mmHg' : ''}
               </CardTitle>
             </CardHeader>
           </Card>
