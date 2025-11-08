@@ -2,60 +2,52 @@ import { useState, useEffect } from "react";
 import { Award, Heart, TrendingUp, Calendar, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { getCurrentUser, getUserHealthLogs } from "../utils/auth";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { getUserBadges, ALL_BADGES, type Badge as BadgeType } from "../utils/badges";
+import { getUserHealthLogs, type HealthLog } from "../utils/auth";
+import { useAuth } from "../context/AuthContext"; 
+import { ALL_BADGES, calculateConsecutiveDays, type Badge as BadgeType } from "../utils/badges";
 
 export default function MyPage() {
-  const [user, setUser] = useState(getCurrentUser());
-  const [healthLogs, setHealthLogs] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      const logs = getUserHealthLogs(user.email);
-      setHealthLogs(logs);
-      // 실시간 업데이트를 위해 주기적으로 사용자 정보 갱신
-      const interval = setInterval(() => {
-        setUser(getCurrentUser());
-      }, 1000);
-      return () => clearInterval(interval);
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, []);
 
-  const hasAngelBadge = (user?.totalDonation || 0) >= 10000;
-  const hasChampionBadge = healthLogs.length >= 30;
-  const hasDedicatedBadge = healthLogs.length >= 7;
+    const loadLogs = async () => {
+      setLoading(true);
+      try {
+        const logs = await getUserHealthLogs();
+        setHealthLogs(logs);
+      } catch (error) {
+        console.error("Failed to load health logs for MyPage:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadLogs();
+  }, [user]);
 
+  const userBadges = user?.badges || [];
+
+  const consecutiveDays = calculateConsecutiveDays(healthLogs.map(log => log.recordedAt));
+  
   const getMemberSince = () => {
     if (!user?.createdAt) return '';
     return new Date(user.createdAt).toLocaleDateString('ko-KR');
   };
 
-  const getConsecutiveDays = () => {
-    if (healthLogs.length === 0) return 0;
-    
-    const dates = healthLogs.map(log => new Date(log.recordedAt).toISOString().split('T')[0]);
-    const uniqueDates = [...new Set(dates)].sort().reverse();
-    
-    let consecutive = 1;
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (uniqueDates[0] !== today) return 0;
-    
-    for (let i = 1; i < uniqueDates.length; i++) {
-      const current = new Date(uniqueDates[i - 1]);
-      const prev = new Date(uniqueDates[i]);
-      const diffDays = Math.round((current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        consecutive++;
-      } else {
-        break;
-      }
-    }
-    
-    return consecutive;
-  };
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">마이페이지 로딩 중...</div>;
+  }
+  
+  if (!user) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">사용자 정보를 찾을 수 없습니다.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
@@ -78,11 +70,11 @@ export default function MyPage() {
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-2xl">
-                    {user?.email.charAt(0).toUpperCase()}
+                    {user.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-xl mb-1">{user?.email.split('@')[0]}</h3>
-                    <p className="text-sm text-gray-600">{user?.email}</p>
+                    <h3 className="text-xl mb-1">{user.name}</h3>
+                    <p className="text-sm text-gray-600">{user.email}</p>
                     <p className="text-xs text-gray-500 mt-1">가입일: {getMemberSince()}</p>
                   </div>
                 </div>
@@ -93,7 +85,7 @@ export default function MyPage() {
                       <Heart className="w-4 h-4" />
                       <span className="text-sm">누적 기부금</span>
                     </div>
-                    <p className="text-2xl">₩{user?.totalDonation.toLocaleString()}</p>
+                    <p className="text-2xl">₩{user.totalDonation.toLocaleString()}</p>
                   </div>
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex items-center gap-2 text-blue-700 mb-2">
@@ -122,7 +114,7 @@ export default function MyPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="text-sm text-gray-600 mb-1">총 기부금</p>
-                      <p className="text-3xl text-emerald-700">₩{user?.totalDonation.toLocaleString()}</p>
+                      <p className="text-3xl text-emerald-700">₩{user.totalDonation.toLocaleString()}</p>
                     </div>
                     <Heart className="w-12 h-12 text-emerald-600" />
                   </div>
@@ -130,17 +122,17 @@ export default function MyPage() {
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">다음 뱃지까지</span>
+                        <span className="text-gray-600">다음 뱃지 (5,000원)</span>
                         <span className="text-emerald-700">
-                          {hasAngelBadge 
+                          {userBadges.includes('giving_spirit')
                             ? '달성! 🎉' 
-                            : `₩${(10000 - (user?.totalDonation || 0)).toLocaleString()} 남음`}
+                            : `₩${(5000 - user.totalDonation).toLocaleString()} 남음`}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
                           className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(((user?.totalDonation || 0) / 10000) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((user.totalDonation / 5000) * 100, 100)}%` }}
                         />
                       </div>
                     </div>
@@ -163,7 +155,7 @@ export default function MyPage() {
                       <Calendar className="w-4 h-4 text-gray-600" />
                       <span className="text-sm text-gray-600">연속 기록</span>
                     </div>
-                    <p className="text-2xl">{getConsecutiveDays()}일</p>
+                    <p className="text-2xl">{consecutiveDays}일</p>
                   </div>
                   <div className="border rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -171,7 +163,7 @@ export default function MyPage() {
                       <span className="text-sm text-gray-600">획득 뱃지</span>
                     </div>
                     <p className="text-2xl">
-                      {[hasAngelBadge, hasChampionBadge, hasDedicatedBadge].filter(Boolean).length}개
+                      {userBadges.length}개
                     </p>
                   </div>
                 </div>
@@ -188,7 +180,7 @@ export default function MyPage() {
                   나의 뱃지 컬렉션
                 </CardTitle>
                 <CardDescription>
-                  {user && `${getUserBadges(user.email).length}개 / ${ALL_BADGES.length}개 달성`}
+                  {`${userBadges.length}개 / ${ALL_BADGES.length}개 달성`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -200,7 +192,7 @@ export default function MyPage() {
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       {ALL_BADGES.filter(b => b.category === 'routine').map(badge => {
-                        const earned = user ? getUserBadges(user.email).includes(badge.id) : false;
+                        const earned = userBadges.includes(badge.id);
                         return (
                           <div
                             key={badge.id}
@@ -232,7 +224,7 @@ export default function MyPage() {
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       {ALL_BADGES.filter(b => b.category === 'donation').map(badge => {
-                        const earned = user ? getUserBadges(user.email).includes(badge.id) : false;
+                        const earned = userBadges.includes(badge.id);
                         return (
                           <div
                             key={badge.id}
@@ -264,7 +256,7 @@ export default function MyPage() {
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       {ALL_BADGES.filter(b => b.category === 'challenge').map(badge => {
-                        const earned = user ? getUserBadges(user.email).includes(badge.id) : false;
+                        const earned = userBadges.includes(badge.id);
                         return (
                           <div
                             key={badge.id}
