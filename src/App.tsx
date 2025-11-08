@@ -86,14 +86,12 @@ export default function App() {
         path="/" 
         element={<LandingPage 
           onNavigateToLogin={handleGoToLogin}
-          onNavigateToSignup={handleGoToSignup}
-          onNavigate={(page: Page) => navigate(`/${page}`)}
         />} 
       />
-      <Route path="/about" element={<AboutPage onNavigateBack={handleGoToLanding} />} />
-      <Route path="/partnership" element={<PartnershipPage onNavigateBack={handleGoToLanding} />} />
-      <Route path="/privacy" element={<PrivacyPage onNavigateBack={handleGoToLanding} />} />
-      <Route path="/terms" element={<TermsPage onNavigateBack={handleGoToLanding} />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/partnership" element={<PartnershipPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
 
       <Route element={<PublicOnlyLayout />}>
         <Route 
