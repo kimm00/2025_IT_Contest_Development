@@ -1,10 +1,7 @@
 import { Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 
-interface FooterProps {
-  onNavigate?: (page: 'about' | 'partnership' | 'privacy' | 'terms' | 'dashboard' | 'report' | 'community') => void;
-}
-
-export default function Footer({ onNavigate }: FooterProps = {}) {
+export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300 py-12">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -26,36 +23,36 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
             <h3 className="text-white mb-4">서비스</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <button 
-                  onClick={() => onNavigate?.('dashboard')} 
+                <Link 
+                  to="/dashboard"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   건강 챌린지
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('about')} 
+                <Link 
+                  to="/about"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   기부 프로그램
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('report')} 
+                <Link 
+                  to="/report"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   건강 리포트
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('community')} 
+                <Link 
+                  to="/community"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   커뮤니티
-                </button>
+                </Link>
               </li>
             </ul>
           </div>
@@ -64,36 +61,36 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
             <h3 className="text-white mb-4">회사</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <button 
-                  onClick={() => onNavigate?.('about')} 
+                <Link 
+                  to="/about"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   소개
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('partnership')} 
+                <Link 
+                  to="/partnership"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   파트너십
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('privacy')} 
+                <Link 
+                  to="/privacy"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   개인정보처리방침
-                </button>
+                </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => onNavigate?.('terms')} 
+                <Link 
+                  to="/terms"
                   className="hover:text-emerald-400 transition-colors text-left"
                 >
                   이용약관
-                </button>
+                </Link>
               </li>
             </ul>
           </div>
@@ -101,7 +98,7 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
         
         <div className="border-t border-gray-800 pt-8 text-center text-sm space-y-3">
           <p className="text-emerald-400">
-            ❤️ 본 기부금은 <strong>아템제약</strong>의 후원으로 운영됩니다.
+            ❤️ 본 기부금은 <strong>ITM제약 (Mock)</strong>의 후원으로 운영됩니다.
           </p>
           <p className="text-gray-400">
             💡 당일 첫 건강 기록 시 100원 자동 기부 | 누적 기부금에 따라 레벨별 후원 혜택 제공
