@@ -1,22 +1,22 @@
-import { Shield, Lock, Eye, FileText, AlertCircle, CheckCircle } from "lucide-react";
+import { Shield, Lock, Eye, FileText, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
+import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
 
-interface PrivacyPageProps {
-  onNavigateBack: () => void;
-}
-
-export default function PrivacyPage({ onNavigateBack }: PrivacyPageProps) {
+export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="mx-auto max-w-4xl px-6 lg:px-8 py-6">
-          <button
-            onClick={onNavigateBack}
-            className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 mb-4"
-          >
-            ← 돌아가기
-          </button>
+          <Button variant="ghost" asChild className="text-emerald-600 hover:text-emerald-700 mb-4 px-0 hover:bg-emerald-50">
+            <Link
+              to="/"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              돌아가기
+            </Link>
+          </Button>
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-10 h-10 text-emerald-600" />
             <h1 className="text-gray-900">개인정보 처리방침</h1>
@@ -426,12 +426,13 @@ export default function PrivacyPage({ onNavigateBack }: PrivacyPageProps) {
 
         {/* Back Button */}
         <div className="mt-8 text-center">
-          <button
-            onClick={onNavigateBack}
-            className="px-8 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-          >
-            홈으로 돌아가기
-          </button>
+          <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">
+            <Link
+              to="/"
+            >
+              홈으로 돌아가기
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

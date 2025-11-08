@@ -1,22 +1,22 @@
-import { Building2, Heart, Handshake, TrendingUp, Users, Award } from "lucide-react";
+import { Building2, Heart, Handshake, TrendingUp, Users, Award, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
+import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
 
-interface PartnershipPageProps {
-  onNavigateBack: () => void;
-}
-
-export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps) {
+export default function PartnershipPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 py-6">
-          <button
-            onClick={onNavigateBack}
-            className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 mb-4"
-          >
-            ← 돌아가기
-          </button>
+          <Button variant="ghost" asChild className="text-emerald-600 hover:text-emerald-700 mb-4 px-0 hover:bg-emerald-50">
+            <Link
+              to="/"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              돌아가기
+            </Link>
+          </Button>
           <div className="flex items-center gap-3 mb-2">
             <Handshake className="w-10 h-10 text-emerald-600" />
             <h1 className="text-gray-900">파트너십</h1>
@@ -304,18 +304,20 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                 제약사, 의료기기 제조사, 보험사, IT 기업 등 다양한 분야의 협력을 환영합니다.
               </p>
               <div className="flex gap-4 justify-center">
-                <a 
-                  href="mailto:partnership@healthykong.com"
-                  className="px-8 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                  파트너십 문의
-                </a>
-                <button 
-                  onClick={onNavigateBack}
-                  className="px-8 py-3 bg-white text-emerald-600 border-2 border-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
-                >
-                  홈으로 돌아가기
-                </button>
+              <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">
+                  <a 
+                    href="mailto:partnership@healthykong.com"
+                  >
+                    파트너십 문의
+                  </a>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                  <Link 
+                    to="/"
+                  >
+                    홈으로 돌아가기
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>

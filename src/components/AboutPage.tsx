@@ -1,22 +1,22 @@
-import { Heart, Target, Users, TrendingUp, Award } from "lucide-react";
+import { Heart, Target, Users, TrendingUp, Award, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
+import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
 
-interface AboutPageProps {
-  onNavigateBack: () => void;
-}
-
-export default function AboutPage({ onNavigateBack }: AboutPageProps) {
+export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 py-6">
-          <button
-            onClick={onNavigateBack}
-            className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 mb-4"
-          >
-            ← 돌아가기
-          </button>
+          <Button variant="ghost" asChild className="text-emerald-600 hover:text-emerald-700 mb-4 px-0 hover:bg-emerald-50">
+            <Link
+              to="/"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              돌아가기
+            </Link>
+          </Button>
           <div className="flex items-center gap-3 mb-2">
             <Heart className="w-10 h-10 text-emerald-600" />
             <h1 className="text-gray-900">HealthyKong 소개</h1>
@@ -185,18 +185,20 @@ export default function AboutPage({ onNavigateBack }: AboutPageProps) {
             헬시콩과 함께하고 싶으신가요?
           </p>
           <div className="flex gap-4 justify-center">
-            <button 
-              onClick={onNavigateBack}
-              className="px-8 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-            >
-              시작하기
-            </button>
-            <a 
-              href="mailto:contact@healthykong.com"
-              className="px-8 py-3 bg-white text-emerald-600 border-2 border-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
-            >
-              문의하기
-            </a>
+            <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">
+              <Link
+                to="/signup"
+              >
+                시작하기
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+              <a 
+                href="mailto:contact@healthykong.com"
+              >
+                문의하기
+              </a>
+            </Button>
           </div>
         </div>
       </div>
