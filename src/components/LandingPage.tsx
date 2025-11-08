@@ -7,22 +7,17 @@ import Footer from "./Footer";
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
-  onNavigateToSignup: () => void;
-  onNavigate?: (page: 'about' | 'partnership' | 'privacy' | 'terms') => void;
 }
 
-export default function LandingPage({ onNavigateToLogin, onNavigateToSignup, onNavigate }: LandingPageProps) {
+export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-white">
-      <Hero 
-        onGetStarted={onNavigateToSignup} 
-        onLearnMore={() => onNavigate?.('about')}
-      />
+      <Hero />
       <ConceptSection />
       <FeaturesSection />
       <ImpactSection />
       <CTASection />
-      <Footer onNavigate={onNavigate} />
+      <Footer /> 
     </div>
   );
 }

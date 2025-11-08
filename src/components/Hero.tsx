@@ -1,13 +1,9 @@
 import { Button } from "./ui/button";
 import { Heart, ArrowRight } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { Link } from "react-router-dom";
 
-interface HeroProps {
-  onGetStarted?: () => void;
-  onLearnMore?: () => void;
-}
-
-export default function Hero({ onGetStarted, onLearnMore }: HeroProps = {}) {
+export default function Hero() {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-blue-50">
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
@@ -36,18 +32,22 @@ export default function Hero({ onGetStarted, onLearnMore }: HeroProps = {}) {
               <Button 
                 size="lg" 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg"
-                onClick={onGetStarted}
+                asChild
               >
-                시작하기
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <Link to="/signup">
+                  시작하기
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
               </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
                 className="px-8 py-6 text-lg border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
-                onClick={onLearnMore}
+                asChild
               >
-                더 알아보기
+                <Link to="/about">
+                  더 알아보기
+                </Link>
               </Button>
             </div>
             
