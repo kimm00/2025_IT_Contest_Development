@@ -1,4 +1,7 @@
-// 뱃지 시스템
+import { auth, db } from '../firebase';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { type User, type HealthLog } from './auth';
+import { toast } from 'sonner';
 
 export interface Badge {
   id: string;
@@ -153,153 +156,88 @@ export function getBadgeById(id: string): Badge | undefined {
   return ALL_BADGES.find(badge => badge.id === id);
 }
 
-// 사용자가 획득한 뱃지 저장/조회
-const STORAGE_KEY = 'healthykong_user_badges';
-
-export interface UserBadgeData {
-  [email: string]: {
-    badges: string[]; // 획득한 뱃지 ID 목록
-    earnedAt: { [badgeId: string]: string }; // 획득 시간
-  };
-}
-
-export function getUserBadges(email: string): string[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const allUserBadges: UserBadgeData = data ? JSON.parse(data) : {};
-    return allUserBadges[email]?.badges || [];
-  } catch {
-    return [];
-  }
-}
-
-export function awardBadge(email: string, badgeId: string): boolean {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const allUserBadges: UserBadgeData = data ? JSON.parse(data) : {};
-    
-    if (!allUserBadges[email]) {
-      allUserBadges[email] = { badges: [], earnedAt: {} };
-    }
-
-    // 이미 보유한 뱃지인지 확인
-    if (allUserBadges[email].badges.includes(badgeId)) {
-      return false; // 이미 보유
-    }
-
-    allUserBadges[email].badges.push(badgeId);
-    allUserBadges[email].earnedAt[badgeId] = new Date().toISOString();
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allUserBadges));
-    return true; // 새로 획득
-  } catch {
-    return false;
-  }
-}
-
-export function hasBadge(email: string, badgeId: string): boolean {
-  const badges = getUserBadges(email);
-  return badges.includes(badgeId);
-}
-
-// 뱃지 획득 조건 체크
-export function checkAndAwardBadges(
-  email: string,
+// 뱃지 획득 조건 체크 및 DB 업데이트
+export async function checkAndAwardBadges(
+  user: User,
   totalRecords: number,
   consecutiveDays: number,
-  totalDonation: number,
   hasBloodSugar: boolean,
   hasBloodPressure: boolean,
   daysSinceLastRecord: number
-): string[] {
+): Promise<string[]> {
   const newBadges: string[] = [];
+  const currentBadges = user.badges || []; // 사용자의 현재 뱃지 목록
+  const totalDonation = user.totalDonation; // 사용자의 현재 기부금
 
   // 첫 기록
-  if (totalRecords === 1 && !hasBadge(email, 'first_record')) {
-    if (awardBadge(email, 'first_record')) {
-      newBadges.push('first_record');
-    }
+  if (totalRecords === 1 && !currentBadges.includes('first_record')) {
+    newBadges.push('first_record');
   }
 
   // 첫 기부
-  if (totalDonation >= 100 && !hasBadge(email, 'kindness_beginner')) {
-    if (awardBadge(email, 'kindness_beginner')) {
-      newBadges.push('kindness_beginner');
-    }
-  }
-
-  // 회원가입 (Goal Setter)
-  if (!hasBadge(email, 'goal_setter')) {
-    if (awardBadge(email, 'goal_setter')) {
-      newBadges.push('goal_setter');
-    }
+  if (totalDonation >= 100 && !currentBadges.includes('kindness_beginner')) {
+    newBadges.push('kindness_beginner');
   }
 
   // 3일 연속
-  if (consecutiveDays >= 3 && !hasBadge(email, 'starter_spark')) {
-    if (awardBadge(email, 'starter_spark')) {
-      newBadges.push('starter_spark');
-    }
+  if (consecutiveDays >= 3 && !currentBadges.includes('starter_spark')) {
+    newBadges.push('starter_spark');
   }
 
   // 7일 연속
-  if (consecutiveDays >= 7 && !hasBadge(email, 'perfect_streak')) {
-    if (awardBadge(email, 'perfect_streak')) {
-      newBadges.push('perfect_streak');
-    }
+  if (consecutiveDays >= 7 && !currentBadges.includes('perfect_streak')) {
+    newBadges.push('perfect_streak');
   }
 
   // 14일 연속
-  if (consecutiveDays >= 14 && !hasBadge(email, 'consistency_champ')) {
-    if (awardBadge(email, 'consistency_champ')) {
-      newBadges.push('consistency_champ');
-    }
+  if (consecutiveDays >= 14 && !currentBadges.includes('consistency_champ')) {
+    newBadges.push('consistency_champ');
   }
 
   // 30일 연속
-  if (consecutiveDays >= 30 && !hasBadge(email, 'habit_master')) {
-    if (awardBadge(email, 'habit_master')) {
-      newBadges.push('habit_master');
-    }
+  if (consecutiveDays >= 30 && !currentBadges.includes('habit_master')) {
+    newBadges.push('habit_master');
   }
 
   // 재기의 용사 (7일 이상 공백 후 재시작)
-  if (daysSinceLastRecord >= 7 && totalRecords > 1 && !hasBadge(email, 'comeback_kid')) {
-    if (awardBadge(email, 'comeback_kid')) {
-      newBadges.push('comeback_kid');
-    }
+  if (daysSinceLastRecord >= 7 && totalRecords > 1 && !currentBadges.includes('comeback_kid')) {
+    newBadges.push('comeback_kid');
   }
 
   // 기부 뱃지들
-  if (totalDonation >= 5000 && !hasBadge(email, 'giving_spirit')) {
-    if (awardBadge(email, 'giving_spirit')) {
-      newBadges.push('giving_spirit');
-    }
+  if (totalDonation >= 5000 && !currentBadges.includes('giving_spirit')) {
+    newBadges.push('giving_spirit');
   }
 
-  if (totalDonation >= 30000 && !hasBadge(email, 'donation_star')) {
-    if (awardBadge(email, 'donation_star')) {
-      newBadges.push('donation_star');
-    }
+  if (totalDonation >= 30000 && !currentBadges.includes('donation_star')) {
+    newBadges.push('donation_star');
   }
 
-  if (totalDonation >= 100000 && !hasBadge(email, 'hope_maker')) {
-    if (awardBadge(email, 'hope_maker')) {
-      newBadges.push('hope_maker');
-    }
+  if (totalDonation >= 100000 && !currentBadges.includes('hope_maker')) {
+    newBadges.push('hope_maker');
   }
 
   // 균형의 달인 (혈당과 혈압 모두 기록)
-  if (hasBloodSugar && hasBloodPressure && !hasBadge(email, 'life_balancer')) {
-    if (awardBadge(email, 'life_balancer')) {
-      newBadges.push('life_balancer');
-    }
+  if (hasBloodSugar && hasBloodPressure && !currentBadges.includes('life_balancer')) {
+    newBadges.push('life_balancer');
   }
 
   // 꾸준함의 전설 (50회 기록)
-  if (totalRecords >= 50 && !hasBadge(email, 'persistence_legend')) {
-    if (awardBadge(email, 'persistence_legend')) {
-      newBadges.push('persistence_legend');
+  if (totalRecords >= 50 && !currentBadges.includes('persistence_legend')) {
+    newBadges.push('persistence_legend');
+  }
+
+  // 새로 획득한 뱃지가 있다면 Firestore DB에 한 번만 업데이트
+  if (newBadges.length > 0) {
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        badges: arrayUnion(...newBadges) 
+      });
+    } catch (error) {
+      console.error("Badge award DB update error:", error);
+      toast.error("뱃지 획득 정보를 저장하는 데 실패했습니다.");
+      return []; // DB 저장 실패 시 빈 배열 반환
     }
   }
 
@@ -310,19 +248,22 @@ export function checkAndAwardBadges(
 export function calculateConsecutiveDays(recordDates: string[]): number {
   if (recordDates.length === 0) return 0;
 
-  const uniqueDates = [...new Set(recordDates.map(d => d.split('T')[0]))].sort().reverse();
-  let consecutive = 1;
-  const today = new Date().toISOString().split('T')[0];
+  const uniqueDates = [...new Set(recordDates.map(d => d.split('T')[0]))].sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+  let consecutive = 0;
   
-  // 오늘 기록이 있는지 확인
-  if (uniqueDates[0] !== today) {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
-    if (uniqueDates[0] !== yesterdayStr) {
-      return 0; // 연속성이 끊김
-    }
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  
+  if (uniqueDates[0] === todayStr) {
+    consecutive = 1;
+  } else if (uniqueDates[0] === yesterdayStr) {
+    consecutive = 1;
+  } else {
+    return 0;
   }
 
   for (let i = 0; i < uniqueDates.length - 1; i++) {
@@ -340,13 +281,17 @@ export function calculateConsecutiveDays(recordDates: string[]): number {
   return consecutive;
 }
 
-// 마지막 기록 이후 경과 일수
+// 기록 공백 계산
 export function daysSinceLastRecord(recordDates: string[]): number {
-  if (recordDates.length <= 1) return 0;
+  const uniqueDates = [...new Set(recordDates.map(d => d.split('T')[0]))]
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-  const dates = recordDates.map(d => new Date(d)).sort((a, b) => b.getTime() - a.getTime());
-  const lastRecord = dates[1]; // 두 번째로 최근 기록
-  const now = new Date();
+  if (uniqueDates.length < 2) return 0;
+
+  const mostRecent = new Date(uniqueDates[0]);
+  const secondMostRecent = new Date(uniqueDates[1]); 
   
-  return Math.floor((now.getTime() - lastRecord.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor((mostRecent.getTime() - secondMostRecent.getTime()) / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
 }
