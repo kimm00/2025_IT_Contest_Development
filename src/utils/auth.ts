@@ -19,9 +19,11 @@ import {
   query,
   where,
   getDocs,
-  serverTimestamp, // 3. 서버 시간 기준 타임스탬프
-  runTransaction, // 4. 'addLog'와 'updateUser'를 동시에 처리 (중요!)
-  orderBy
+  serverTimestamp,
+  runTransaction,
+  orderBy,
+  onSnapshot,
+  type Unsubscribe
 } from 'firebase/firestore';
 import { toast } from 'sonner';
 
@@ -120,21 +122,29 @@ export async function logout(): Promise<void> {
 /**
  * (중요) 실시간 사용자 상태 감지 (Auth + Firestore)
  * React Context에서 이 함수를 사용하여 로그인 상태를 감지합니다.
+ * try/catch를 추가하여 프로필 로드 실패 시에도 앱이 멈추지 않도록 함
  */
 export function onAuthChange(callback: (user: User | null) => void): () => void {
   // onAuthStateChanged는 구독 해제 함수를 반환합니다.
   return onAuthStateChanged(auth, async (authUser: AuthUser | null) => {
-    if (authUser) {
-      // 1. Auth에는 로그인됨 -> Firestore에서 프로필 정보를 가져옴
-      const userProfile = await getCurrentUserProfile(authUser.uid);
-      if (userProfile) {
-        callback(userProfile); // 프로필 정보(이름, 기부금 등)와 함께 반환
+    try {
+      if (authUser) {
+        // 1. Auth에는 로그인됨 -> Firestore에서 프로필 정보를 가져옴
+        const userProfile = await getCurrentUserProfile(authUser.uid);
+        
+        if (userProfile) {
+          callback(userProfile); // 프로필 정보(이름, 기부금 등)와 함께 반환
+        } else {
+          // Auth에는 있지만 DB에 프로필이 없는 비정상적 경우
+          callback(null);
+        }
       } else {
-        // Auth에는 있지만 DB에 프로필이 없는 비정상적 경우
+        // 2. 로그아웃됨
         callback(null);
       }
-    } else {
-      // 2. 로그아웃됨
+    } catch (error) {
+      // 3. getCurrentUserProfile에서 오류 발생 시
+      console.error("Error during auth state change:", error);
       callback(null);
     }
   });
@@ -278,4 +288,29 @@ export async function getUserHealthLogs(): Promise<HealthLog[]> {
     console.error("Get Health Logs Error: ", error);
     return [];
   }
+}
+
+/**
+ * 실시간 사용자 프로필 구독 (onSnapshot)
+ */
+export function subscribeToUserProfile(
+  uid: string, 
+  callback: (user: User | null) => void
+): Unsubscribe {
+  
+  const userDocRef = doc(db, 'users', uid);
+  
+  const unsubscribe = onSnapshot(userDocRef, (doc) => {
+    if (doc.exists()) {
+      callback(doc.data() as User);
+    } else {
+      callback(null); 
+    }
+  }, (error) => {
+    console.error("Error subscribing to user profile:", error);
+    toast.error("사용자 정보 실시간 연동에 실패했습니다.");
+    callback(null);
+  });
+
+  return unsubscribe;
 }
