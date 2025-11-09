@@ -5,7 +5,6 @@ import {
   collection,
   addDoc,
   getDocs,
-  getDoc,
   doc,
   updateDoc,
   deleteDoc,
@@ -13,7 +12,6 @@ import {
   runTransaction,
   increment,
 } from "firebase/firestore";
-import { toast } from "sonner";
 
 // -------------------- 레벨 시스템 --------------------
 
@@ -180,30 +178,11 @@ export async function deletePost(
   postId: string,
   userEmail: string
 ): Promise<boolean> {
-  const postRef = doc(db, "posts", postId); // 1. 특정 글 1개의 '주소'만 가져옴
-
-  try {
-    const snap = await getDoc(postRef); // 2. '1개'의 글만 읽음
-    if (!snap.exists()) {
-      toast.error("존재하지 않는 게시글입니다.");
-      return false;
-    }
-    
-    // 3. 권한 확인
-    if (snap.data().authorEmail !== userEmail) {
-      toast.error("삭제 권한이 없습니다.");
-      return false;
-    }
-
-    // 4. (중요) 이 게시글의 '하위 컬렉션(댓글)'을 먼저 삭제해야 함
-    // (MVP에서는 일단 댓글은 무시하고 글만 삭제)
-    
-    await deleteDoc(postRef); // 5. 글 삭제
-    return true;
-
-  } catch (error) {
-    toast.error("게시글 삭제 중 오류가 발생했습니다.");
-    console.error("Delete Post Error: ", error);
-    return false;
-  }
+  const snap = await getDocs(collection(db, "posts"));
+  const target = snap.docs.find(
+    (d) => d.id === postId && (d.data() as any).authorEmail === userEmail
+  );
+  if (!target) return false;
+  await deleteDoc(doc(db, "posts", postId));
+  return true;
 }
