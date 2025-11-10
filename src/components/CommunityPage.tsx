@@ -371,7 +371,9 @@ export default function CommunityPage() {
                         </div>
 
                         {/* Post Content */}
-                        <h3 className="text-gray-900 mb-2">{post.title}</h3>
+                        <h3 className="font-extrabold inline-block bg-emerald-50 text-emerald-900 font-extrabold text-lg px-3 py-1 rounded-md mb-3">
+                          {post.title}
+                        </h3>
                         <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">
                           {post.content}
                         </p>
@@ -503,6 +505,58 @@ export default function CommunityPage() {
                                   ) : (
                                     <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.content}</p>
                                   )}
+
+                                  {/* Reaction Buttons */}
+                                  <div className="flex items-center gap-4 mt-2">
+                                    {[
+                                      { key: "like", icon: "👍", color: "text-emerald-600" },
+                                      { key: "funny", icon: "😂", color: "text-yellow-500" },
+                                      { key: "sad", icon: "😢", color: "text-blue-500" },
+                                      { key: "angry", icon: "😡", color: "text-red-500" },
+                                    ].map(({ key, icon, color }) => {
+                                      const reacted =
+                                        comment.reactions?.[key]?.includes(user?.email);
+                                      const count = comment.reactions?.[key]?.length || 0;
+
+                                      const handleReaction = async () => {
+                                        if (!user) {
+                                          toast.error("로그인이 필요합니다");
+                                          return;
+                                        }
+                                        try {
+                                          const commentRef = doc(db, "posts", post.id, "comments", comment.id);
+                                          const currentReactions = comment.reactions || {};
+                                          const userEmail = user.email;
+
+                                          const updatedReactions = {
+                                            ...currentReactions,
+                                            [key]: reacted
+                                              ? currentReactions[key].filter((email: string) => email !== userEmail)
+                                              : [...(currentReactions[key] || []), userEmail],
+                                          };
+
+                                          await updateDoc(commentRef, { reactions: updatedReactions });
+                                          await fetchPosts();
+                                        } catch (e) {
+                                          console.error(e);
+                                          toast.error("반응 처리 중 오류가 발생했습니다.");
+                                        }
+                                      };
+
+                                      return (
+                                        <button
+                                          key={key}
+                                          onClick={handleReaction}
+                                          className={`flex items-center gap-1 text-sm transition-all ${
+                                            reacted ? `${color} font-semibold` : "text-gray-500 hover:text-gray-700"
+                                          }`}
+                                        >
+                                          <span>{icon}</span>
+                                          <span>{count > 0 ? count : ""}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               );
                             })}
