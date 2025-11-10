@@ -63,11 +63,12 @@ export default function CommunityPage() {
   }, []);
 
   // Firestore Timestamp/Date/string → ISO 문자열로 정규화
-  const toIso = (v: any): string => {
+  const toIso = (v: any): string | null => {
+    if (v === null || v === undefined) return null; // ✅ null 그대로 유지
     if (v && typeof v.toDate === "function") return v.toDate().toISOString();
     if (typeof v === "string") return v;
     if (v instanceof Date) return v.toISOString();
-    return new Date(0).toISOString();
+    return null;
   };
 
   // 게시글 + 댓글 함께 로드
@@ -88,7 +89,7 @@ export default function CommunityPage() {
               levelId: c.levelId,
               content: c.content,
               createdAt: toIso(c.createdAt),
-              updatedAt: c.updatedAt ? toIso(c.updatedAt) : null,
+              updatedAt: toIso(c.updatedAt),
             };
           });
 
@@ -449,7 +450,7 @@ export default function CommunityPage() {
                                       </Badge>
                                       <span className="text-gray-500 text-xs ml-auto">
                                         {formatTimeAgo(comment.createdAt)}
-                                        {comment.updatedAt && (
+                                        {comment.updatedAt !== null && comment.updatedAt !== undefined && (
                                           <span className="ml-1 text-gray-400 italic">(수정됨)</span>
                                         )}
                                       </span>
