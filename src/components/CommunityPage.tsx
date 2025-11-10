@@ -12,6 +12,7 @@ import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 
 import {
   DONATION_LEVELS,
@@ -87,6 +88,7 @@ export default function CommunityPage() {
               levelId: c.levelId,
               content: c.content,
               createdAt: toIso(c.createdAt),
+              updatedAt: c.updatedAt ? toIso(c.updatedAt) : null,
             };
           });
 
@@ -411,7 +413,7 @@ export default function CommunityPage() {
                               const handleEditComment = async () => {
                                 try {
                                   const commentRef = doc(db, "posts", post.id, "comments", comment.id);
-                                  await updateDoc(commentRef, { content: editContent });
+                                  await updateDoc(commentRef, { content: editContent, updatedAt: serverTimestamp(),});
                                   toast.success("댓글이 수정되었습니다!");
                                   setEditingCommentId(null);
                                   await fetchPosts();
@@ -444,6 +446,9 @@ export default function CommunityPage() {
                                     </Badge>
                                     <span className="text-gray-500 text-xs ml-auto">
                                       {formatTimeAgo(comment.createdAt)}
+                                      {comment.updatedAt && (
+                                        <span className="ml-1 text-gray-400 italic">(수정됨)</span>
+                                      )}
                                     </span>
 
                                     {isCommentAuthor && (
