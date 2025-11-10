@@ -1,5 +1,14 @@
+// src/components/CommunityPage.tsx
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, ThumbsUp, Send, Trash2, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  Heart,
+  MessageCircle,
+  ThumbsUp,
+  Send,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Button } from "./ui/button";
@@ -8,11 +17,17 @@ import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { toast } from "sonner";
+
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { serverTimestamp } from "firebase/firestore";
 
 import {
   DONATION_LEVELS,
@@ -30,9 +45,11 @@ type CommunityComment = {
   id: string;
   author: string;
   authorEmail: string;
+  authorUid:string;
   levelId: string;
   content: string;
   createdAt: any; // Firestore Timestamp | string | Date
+  updatedAt?: any; // Firestore Timestamp | string | Date | null
 };
 
 type PostWithCounts = CommunityPost & {
@@ -40,31 +57,39 @@ type PostWithCounts = CommunityPost & {
   comments?: CommunityComment[];
 };
 
-export default function CommunityPage() {
+export default function CommunityPage({
+  onViewUserProfile,
+}: {
+  onViewUserProfile?: (uid: string) => void;
+}) {
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [posts, setPosts] = useState<PostWithCounts[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
+  const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
-  const [commentInputs, setCommentInputs] = useState<{ [postId: string]: string }>({});
-  const [showNewPostForm, setShowNewPostForm] = useState(false);
+  const [commentInputs, setCommentInputs] = useState<{
+    [postId: string]: string;
+  }>({});
 
   // 댓글 수정 상태 관리
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
 
-  // 사용자의 총 기부금
+  // 로그인 사용자 레벨 정보
   const totalDonation = user ? user.totalDonation : 0;
   const userLevel = getUserLevel(totalDonation);
 
   useEffect(() => {
     fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Firestore Timestamp/Date/string → ISO 문자열로 정규화
   const toIso = (v: any): string | null => {
-    if (v === null || v === undefined) return null; // ✅ null 그대로 유지
+    if (v === null || v === undefined) return null;
     if (v && typeof v.toDate === "function") return v.toDate().toISOString();
     if (typeof v === "string") return v;
     if (v instanceof Date) return v.toISOString();
@@ -86,6 +111,7 @@ export default function CommunityPage() {
               id: d.id,
               author: c.author,
               authorEmail: c.authorEmail,
+              authorUid: c.authorUid ?? "", 
               levelId: c.levelId,
               content: c.content,
               createdAt: toIso(c.createdAt),
@@ -95,6 +121,7 @@ export default function CommunityPage() {
 
           return {
             ...p,
+            authorUid: (p as any).authorUid ?? "",
             createdAt: toIso((p as any).createdAt),
             likedBy: Array.isArray(p.likedBy) ? p.likedBy : [],
             likes: typeof p.likes === "number" ? p.likes : 0,
@@ -106,7 +133,9 @@ export default function CommunityPage() {
 
       // 최신순 정렬
       withCounts.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) =>
+          new Date(b.createdAt || "").getTime() -
+          new Date(a.createdAt || "").getTime()
       );
 
       setPosts(withCounts);
@@ -116,9 +145,13 @@ export default function CommunityPage() {
     }
   };
 
+  // 레벨 필터링
   const filteredPosts =
-    selectedLevel === "all" ? posts : posts.filter((post) => post.levelId === selectedLevel);
+    selectedLevel === "all"
+      ? posts
+      : posts.filter((post) => post.levelId === selectedLevel);
 
+  // 글 작성
   const handleCreatePost = async () => {
     if (!user) {
       toast.error("로그인이 필요합니다");
@@ -132,6 +165,7 @@ export default function CommunityPage() {
     await saveCommunityPost({
       author: user.name,
       authorEmail: user.email,
+      authorUid: user.uid,          // ✅ 추가
       levelId: userLevel.id,
       title: newPostTitle,
       content: newPostContent,
@@ -144,15 +178,17 @@ export default function CommunityPage() {
     toast.success("게시글이 작성되었습니다!");
   };
 
+  // 좋아요
   const handleLike = async (postId: string) => {
     if (!user) {
       toast.error("로그인이 필요합니다");
       return;
     }
-    await likePost(postId, user.email);
+    await likePost(postId, user.uid);
     await fetchPosts();
   };
 
+  // 댓글 추가
   const handleAddComment = async (postId: string) => {
     if (!user) {
       toast.error("로그인이 필요합니다");
@@ -166,6 +202,7 @@ export default function CommunityPage() {
     await addComment(postId, {
       author: user.name,
       authorEmail: user.email,
+      authorUid: user.uid,
       levelId: userLevel.id,
       content: commentContent,
     });
@@ -174,9 +211,10 @@ export default function CommunityPage() {
     toast.success("댓글이 추가되었습니다!");
   };
 
+  // 게시글 삭제
   const handleDeletePost = async (postId: string) => {
     if (!user) return;
-    if (await deletePost(postId, user.email)) {
+    if (await deletePost(postId, user.uid)) {
       await fetchPosts();
       toast.success("게시글이 삭제되었습니다");
     } else {
@@ -184,8 +222,10 @@ export default function CommunityPage() {
     }
   };
 
+  // 상대 시간 표시
   const formatTimeAgo = (dateLike: any) => {
     const dateString = toIso(dateLike);
+    if (!dateString) return "";
     const now = new Date();
     const past = new Date(dateString);
     const diffMs = now.getTime() - past.getTime();
@@ -199,8 +239,18 @@ export default function CommunityPage() {
     return past.toLocaleDateString("ko-KR");
   };
 
+  // 레벨 찾기
   const getLevelById = (levelId: string): DonationLevel => {
     return DONATION_LEVELS.find((l) => l.id === levelId) || DONATION_LEVELS[0];
+  };
+
+  // 프로필로 이동 (App 콜백 있으면 사용, 없으면 URL 네비게이션)
+  const goProfile = (uid: string) => {
+    if (onViewUserProfile) {
+      onViewUserProfile(uid);
+    } else {
+      navigate(`/user/${uid}`);
+    }
   };
 
   return (
@@ -226,9 +276,13 @@ export default function CommunityPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-white">{user.name}님</h3>
-                        <Badge className={`${userLevel.color} border`}>{userLevel.name}</Badge>
+                        <Badge className={`${userLevel.color} border`}>
+                          {userLevel.name}
+                        </Badge>
                       </div>
-                      <p className="text-emerald-100 text-sm">{userLevel.description}</p>
+                      <p className="text-emerald-100 text-sm">
+                        {userLevel.description}
+                      </p>
                       <p className="text-emerald-200 text-sm mt-1">
                         누적 기부금: {totalDonation.toLocaleString()}원
                       </p>
@@ -276,7 +330,10 @@ export default function CommunityPage() {
                   >
                     취소
                   </Button>
-                  <Button onClick={handleCreatePost} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Button
+                    onClick={handleCreatePost}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
                     게시하기
                   </Button>
                 </div>
@@ -304,20 +361,20 @@ export default function CommunityPage() {
           </TabsList>
 
           <TabsContent value={selectedLevel} className="mt-6">
-            {/* Level Info Card */}
+            {/* 선택 레벨 가이드 카드 */}
             {selectedLevel !== "all" && (
               <Card className="mb-6 bg-gradient-to-r from-emerald-50 to-blue-50">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="text-4xl">{getLevelById(selectedLevel).badgeEmoji}</div>
+                    <div className="text-4xl">
+                      {DONATION_LEVELS.find((l) => l.id === selectedLevel)?.badgeEmoji}
+                    </div>
                     <div>
-                      <h3 className="text-gray-900 mb-1">{getLevelById(selectedLevel).name} 레벨</h3>
-                      <p className="text-gray-600 text-sm">{getLevelById(selectedLevel).description}</p>
-                      <p className="text-gray-500 text-sm mt-1">
-                        기부금 범위: {getLevelById(selectedLevel).minAmount.toLocaleString()}원 ~{" "}
-                        {getLevelById(selectedLevel).maxAmount === Infinity
-                          ? "∞"
-                          : getLevelById(selectedLevel).maxAmount.toLocaleString() + "원"}
+                      <h3 className="text-gray-900 mb-1">
+                        {DONATION_LEVELS.find((l) => l.id === selectedLevel)?.name} 레벨
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        {DONATION_LEVELS.find((l) => l.id === selectedLevel)?.description}
                       </p>
                     </div>
                   </div>
@@ -332,14 +389,18 @@ export default function CommunityPage() {
                   <CardContent className="p-12 text-center">
                     <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500">아직 게시글이 없습니다.</p>
-                    <p className="text-gray-400 text-sm mt-2">첫 번째 게시글을 작성해보세요!</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      첫 번째 게시글을 작성해보세요!
+                    </p>
                   </CardContent>
                 </Card>
               ) : (
                 filteredPosts.map((post) => {
                   const postLevel = getLevelById(post.levelId);
                   const isAuthor = user?.email === post.authorEmail;
-                  const hasLiked = user ? (post.likedBy ?? []).includes(user.email) : false;
+                  const hasLiked = user
+                    ? (post.likedBy ?? []).includes(user.email)
+                    : false;
 
                   return (
                     <Card key={post.id} className="hover:shadow-md transition-shadow">
@@ -350,7 +411,18 @@ export default function CommunityPage() {
                             <div className="text-3xl">{postLevel.badgeEmoji}</div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-900">{post.author}</span>
+                                {/* 작성자 클릭 시 프로필 */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (post.authorUid) navigate(`/user/${post.authorUid}`); // ✅ 가드
+                                    else toast.error("프로필 이동 불가: 작성자 식별자가 없습니다.");
+                                  }}
+                                  className="text-gray-900 underline-offset-2 hover:underline hover:text-emerald-700"
+                                  title={`${post.author} 프로필 보기`}
+                                >
+                                  {post.author}
+                                </button>
                                 <Badge className={`${postLevel.color} border text-xs`}>
                                   {postLevel.name}
                                 </Badge>
@@ -374,7 +446,7 @@ export default function CommunityPage() {
                         </div>
 
                         {/* Post Content */}
-                        <h3 className="font-extrabold inline-block bg-emerald-50 text-emerald-900 font-extrabold text-lg px-3 py-1 rounded-md mb-3">
+                        <h3 className="font-extrabold inline-block bg-emerald-50 text-emerald-900 text-lg px-3 py-1 rounded-md mb-3">
                           {post.title}
                         </h3>
                         <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">
@@ -391,7 +463,9 @@ export default function CommunityPage() {
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                           >
-                            <ThumbsUp className={`w-4 h-4 ${hasLiked ? "fill-current" : ""}`} />
+                            <ThumbsUp
+                              className={`w-4 h-4 ${hasLiked ? "fill-current" : ""}`}
+                            />
                             <span className="text-sm">{post.likes ?? 0}</span>
                           </button>
 
@@ -408,12 +482,20 @@ export default function CommunityPage() {
                             <div className="space-y-3 mb-4">
                               {post.comments.map((comment) => {
                                 const commentLevel = getLevelById(comment.levelId);
-                                const isCommentAuthor = user?.email === comment.authorEmail;
+                                const isCommentAuthor =
+                                  user?.email === comment.authorEmail;
                                 const isEditing = editingCommentId === comment.id;
 
-                                const handleEditComment = async () => {
+                                // 댓글 수정 완료
+                                const commitEdit = async () => {
                                   try {
-                                    const commentRef = doc(db, "posts", post.id, "comments", comment.id);
+                                    const commentRef = doc(
+                                      db,
+                                      "posts",
+                                      post.id,
+                                      "comments",
+                                      comment.id
+                                    );
                                     await updateDoc(commentRef, {
                                       content: editContent,
                                       updatedAt: serverTimestamp(),
@@ -427,10 +509,17 @@ export default function CommunityPage() {
                                   }
                                 };
 
-                                const handleDeleteComment = async () => {
+                                // 댓글 삭제
+                                const removeComment = async () => {
                                   if (!confirm("정말 이 댓글을 삭제하시겠습니까?")) return;
                                   try {
-                                    const commentRef = doc(db, "posts", post.id, "comments", comment.id);
+                                    const commentRef = doc(
+                                      db,
+                                      "posts",
+                                      post.id,
+                                      "comments",
+                                      comment.id
+                                    );
                                     await deleteDoc(commentRef);
                                     toast.success("댓글이 삭제되었습니다!");
                                     await fetchPosts();
@@ -443,16 +532,34 @@ export default function CommunityPage() {
                                 return (
                                   <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                      <span className="text-xl">{commentLevel.badgeEmoji}</span>
-                                      <span className="text-gray-900 text-sm">{comment.author}</span>
-                                      <Badge className={`${commentLevel.color} border text-xs`}>
+                                      <span className="text-xl">
+                                        {commentLevel.badgeEmoji}
+                                      </span>
+                                      {/* 댓글 작성자 클릭 */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (comment.authorUid) navigate(`/user/${comment.authorUid}`); // ✅ 가드
+                                          else toast.error("프로필 이동 불가: 작성자 식별자가 없습니다.");
+                                        }}
+                                        className="text-gray-900 text-sm underline-offset-2 hover:underline hover:text-emerald-700"
+                                      >
+                                        {comment.author}
+                                      </button>
+                                      <Badge
+                                        className={`${commentLevel.color} border text-xs`}
+                                      >
                                         {commentLevel.name}
                                       </Badge>
+
                                       <span className="text-gray-500 text-xs ml-auto">
                                         {formatTimeAgo(comment.createdAt)}
-                                        {comment.updatedAt !== null && comment.updatedAt !== undefined && (
-                                          <span className="ml-1 text-gray-400 italic">(수정됨)</span>
-                                        )}
+                                        {comment.updatedAt !== null &&
+                                          comment.updatedAt !== undefined && (
+                                            <span className="ml-1 text-gray-400 italic">
+                                              (수정됨)
+                                            </span>
+                                          )}
                                       </span>
 
                                       {isCommentAuthor && (
@@ -474,7 +581,7 @@ export default function CommunityPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-red-600 hover:text-red-700"
-                                                onClick={handleDeleteComment}
+                                                onClick={removeComment}
                                               >
                                                 삭제
                                               </Button>
@@ -505,7 +612,7 @@ export default function CommunityPage() {
                                           <Button
                                             size="sm"
                                             className="bg-emerald-600 hover:bg-emerald-700"
-                                            onClick={handleEditComment}
+                                            onClick={commitEdit}
                                           >
                                             완료
                                           </Button>
@@ -530,7 +637,10 @@ export default function CommunityPage() {
                               placeholder="댓글을 입력하세요..."
                               value={commentInputs[post.id] || ""}
                               onChange={(e) =>
-                                setCommentInputs({ ...commentInputs, [post.id]: e.target.value })
+                                setCommentInputs({
+                                  ...commentInputs,
+                                  [post.id]: e.target.value,
+                                })
                               }
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") handleAddComment(post.id);
@@ -557,7 +667,9 @@ export default function CommunityPage() {
         {/* Level Guide */}
         <Card className="mt-8 bg-gradient-to-br from-emerald-50 to-blue-50">
           <CardContent className="p-8">
-            <h3 className="text-gray-900 mb-2 text-center">🏆 헬시콩 커뮤니티 레벨 가이드</h3>
+            <h3 className="text-gray-900 mb-2 text-center">
+              🏆 헬시콩 커뮤니티 레벨 가이드
+            </h3>
             <p className="text-gray-600 text-sm text-center mb-2">
               기부금 누적액에 따라 레벨이 올라가요!
             </p>
@@ -574,9 +686,13 @@ export default function CommunityPage() {
                     {level.minAmount.toLocaleString()}원 ~
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    {level.maxAmount === Infinity ? "∞" : level.maxAmount.toLocaleString() + "원"}
+                    {level.maxAmount === Infinity
+                      ? "∞"
+                      : level.maxAmount.toLocaleString() + "원"}
                   </p>
-                  <p className="text-xs text-gray-500 px-2 leading-snug">{level.description}</p>
+                  <p className="text-xs text-gray-500 px-2 leading-snug">
+                    {level.description}
+                  </p>
                 </div>
               ))}
             </div>
