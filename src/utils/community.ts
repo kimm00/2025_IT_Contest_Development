@@ -92,6 +92,7 @@ export interface CommunityComment {
   levelId: string;
   content: string;
   createdAt: string;
+  updatedAt?: string | null;
 }
 
 export interface CommunityPost {
@@ -170,13 +171,7 @@ export async function addComment(
   await addDoc(commentsRef, {
     ...comment,
     createdAt: serverTimestamp(),
-    // ✅ 댓글 생성 시 reactions 기본 구조 추가
-    reactions: {
-      like: [],
-      funny: [],
-      sad: [],
-      angry: [],
-    },
+    updatedAt: null, 
   });
 }
 
