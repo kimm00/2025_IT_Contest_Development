@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 
 import {
   DONATION_LEVELS,
@@ -48,6 +50,10 @@ export default function CommunityPage() {
   const [commentInputs, setCommentInputs] = useState<{ [postId: string]: string }>({});
   const [showNewPostForm, setShowNewPostForm] = useState(false);
 
+  // 댓글 수정 상태 관리
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+
   // 사용자의 총 기부금
   const totalDonation = user ? user.totalDonation : 0;
   const userLevel = getUserLevel(totalDonation);
@@ -82,6 +88,7 @@ export default function CommunityPage() {
               levelId: c.levelId,
               content: c.content,
               createdAt: toIso(c.createdAt),
+              updatedAt: c.updatedAt ? toIso(c.updatedAt) : null,
             };
           });
 
@@ -366,7 +373,9 @@ export default function CommunityPage() {
                         </div>
 
                         {/* Post Content */}
-                        <h3 className="text-gray-900 mb-2">{post.title}</h3>
+                        <h3 className="font-extrabold inline-block bg-emerald-50 text-emerald-900 font-extrabold text-lg px-3 py-1 rounded-md mb-3">
+                          {post.title}
+                        </h3>
                         <p className="text-gray-700 leading-relaxed mb-4 whitespace-pre-wrap">
                           {post.content}
                         </p>
@@ -396,24 +405,166 @@ export default function CommunityPage() {
                           <>
                             <Separator className="mb-4" />
                             <div className="space-y-3 mb-4">
-                              {post.comments.map((comment) => {
-                                const commentLevel = getLevelById(comment.levelId);
-                                return (
-                                  <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <span className="text-xl">{commentLevel.badgeEmoji}</span>
-                                      <span className="text-gray-900 text-sm">{comment.author}</span>
-                                      <Badge className={`${commentLevel.color} border text-xs`}>
-                                        {commentLevel.name}
-                                      </Badge>
-                                      <span className="text-gray-500 text-xs ml-auto">
-                                        {formatTimeAgo(comment.createdAt)}
-                                      </span>
-                                    </div>
-                                    <p className="text-gray-700 text-sm">{comment.content}</p>
+                            {post.comments.map((comment) => {
+                              const commentLevel = getLevelById(comment.levelId);
+                              const isCommentAuthor = user?.email === comment.authorEmail;
+                              const isEditing = editingCommentId === comment.id;
+
+                              const handleEditComment = async () => {
+                                try {
+                                  const commentRef = doc(db, "posts", post.id, "comments", comment.id);
+                                  await updateDoc(commentRef, { content: editContent, updatedAt: serverTimestamp(),});
+                                  toast.success("댓글이 수정되었습니다!");
+                                  setEditingCommentId(null);
+                                  await fetchPosts();
+                                } catch (e) {
+                                  console.error(e);
+                                  toast.error("댓글 수정 중 오류가 발생했습니다.");
+                                }
+                              };
+
+                              const handleDeleteComment = async () => {
+                                if (!confirm("정말 이 댓글을 삭제하시겠습니까?")) return;
+                                try {
+                                  const commentRef = doc(db, "posts", post.id, "comments", comment.id);
+                                  await deleteDoc(commentRef);
+                                  toast.success("댓글이 삭제되었습니다!");
+                                  await fetchPosts();
+                                } catch (e) {
+                                  console.error(e);
+                                  toast.error("댓글 삭제 중 오류가 발생했습니다.");
+                                }
+                              };
+
+                              return (
+                                <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-xl">{commentLevel.badgeEmoji}</span>
+                                    <span className="text-gray-900 text-sm">{comment.author}</span>
+                                    <Badge className={`${commentLevel.color} border text-xs`}>
+                                      {commentLevel.name}
+                                    </Badge>
+                                    <span className="text-gray-500 text-xs ml-auto">
+                                      {formatTimeAgo(comment.createdAt)}
+                                      {comment.updatedAt && (
+                                        <span className="ml-1 text-gray-400 italic">(수정됨)</span>
+                                      )}
+                                    </span>
+
+                                    {isCommentAuthor && (
+                                      <div className="flex gap-1 ml-2">
+                                        {!isEditing ? (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="text-emerald-600 hover:text-emerald-700"
+                                              onClick={() => {
+                                                setEditingCommentId(comment.id);
+                                                setEditContent(comment.content);
+                                              }}
+                                            >
+                                              수정
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="text-red-600 hover:text-red-700"
+                                              onClick={handleDeleteComment}
+                                            >
+                                              삭제
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-gray-500 hover:text-gray-600"
+                                            onClick={() => setEditingCommentId(null)}
+                                          >
+                                            취소
+                                          </Button>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
-                                );
-                              })}
+
+                                  {isEditing ? (
+                                    <div className="space-y-2">
+                                      <Textarea
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        rows={2}
+                                        className="resize-none"
+                                      />
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          className="bg-emerald-600 hover:bg-emerald-700"
+                                          onClick={handleEditComment}
+                                        >
+                                          완료
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.content}</p>
+                                  )}
+
+                                  {/* Reaction Buttons */}
+                                  <div className="flex items-center gap-4 mt-2">
+                                    {[
+                                      { key: "like", icon: "👍", color: "text-emerald-600" },
+                                      { key: "funny", icon: "😂", color: "text-yellow-500" },
+                                      { key: "sad", icon: "😢", color: "text-blue-500" },
+                                      { key: "angry", icon: "😡", color: "text-red-500" },
+                                    ].map(({ key, icon, color }) => {
+                                      const reacted =
+                                        comment.reactions?.[key]?.includes(user?.email);
+                                      const count = comment.reactions?.[key]?.length || 0;
+
+                                      const handleReaction = async () => {
+                                        if (!user) {
+                                          toast.error("로그인이 필요합니다");
+                                          return;
+                                        }
+                                        try {
+                                          const commentRef = doc(db, "posts", post.id, "comments", comment.id);
+                                          const currentReactions = comment.reactions || {};
+                                          const userEmail = user.email;
+
+                                          const updatedReactions = {
+                                            ...currentReactions,
+                                            [key]: reacted
+                                              ? currentReactions[key].filter((email: string) => email !== userEmail)
+                                              : [...(currentReactions[key] || []), userEmail],
+                                          };
+
+                                          await updateDoc(commentRef, { reactions: updatedReactions });
+                                          await fetchPosts();
+                                        } catch (e) {
+                                          console.error(e);
+                                          toast.error("반응 처리 중 오류가 발생했습니다.");
+                                        }
+                                      };
+
+                                      return (
+                                        <button
+                                          key={key}
+                                          onClick={handleReaction}
+                                          className={`flex items-center gap-1 text-sm transition-all ${
+                                            reacted ? `${color} font-semibold` : "text-gray-500 hover:text-gray-700"
+                                          }`}
+                                        >
+                                          <span>{icon}</span>
+                                          <span>{count > 0 ? count : ""}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
                             </div>
                           </>
                         )}
