@@ -399,7 +399,7 @@ export default function CommunityPage({
                   const postLevel = getLevelById(post.levelId);
                   const isAuthor = user?.email === post.authorEmail;
                   const hasLiked = user
-                    ? (post.likedBy ?? []).includes(user.email)
+                    ? (post.likedBy ?? []).includes(user.uid)
                     : false;
 
                   return (
