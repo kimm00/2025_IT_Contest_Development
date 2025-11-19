@@ -245,13 +245,13 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
         <Card className="mt-8 bg-gradient-to-br from-emerald-50 to-blue-50">
           <CardContent className="p-6">
             <h3 className="text-gray-900 mb-4 text-center">💚 커뮤니티 기여도</h3>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-3 gap-4 mb-4 text-center">
               <StatSmall value={totalPosts} label="작성한 글" />
               <StatSmall value={totalComments} label="받은 댓글" />
               <StatSmall value={totalLikes} label="받은 좋아요" />
             </div>
             <Separator className="my-4" />
-            <p className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-gray-600 mt-6">
               {user.name}님은 <strong className="text-emerald-700">{totalDonation.toLocaleString()}원</strong>의 기부금으로
               <br />
               다른 환우들에게 희망을 전하고 있습니다 ✨
