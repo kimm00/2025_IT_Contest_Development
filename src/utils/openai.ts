@@ -15,7 +15,7 @@ export function getOpenAIKey(): string | null {
   if (saved && saved.trim().length > 0) return saved;
 
   // 기본값으로 도이 API 키 사용
-  return "sk-도이의API키";
+  return "sk-fake-key";
 }
 
 export function hasOpenAIKey(): boolean {
