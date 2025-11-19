@@ -667,28 +667,26 @@ export default function CommunityPage({
         {/* Level Guide */}
         <Card className="mt-8 bg-gradient-to-br from-emerald-50 to-blue-50">
           <CardContent className="p-8">
-            <h3 className="text-gray-900 mb-2 text-center">
-              🏆 헬시콩 커뮤니티 레벨 가이드
-            </h3>
+            <h3 className="text-gray-900 mb-2 text-center">🏆 헬시콩 커뮤니티 레벨 가이드</h3>
             <p className="text-gray-600 text-sm text-center mb-2">
               기부금 누적액에 따라 레벨이 올라가요!
             </p>
             <p className="text-xs text-gray-500 text-center mb-6">
               💡 하루 최대 100원 × 1,000일 = 플래티넘콩 달성 (약 3년)
             </p>
-
+            
             <div className="grid md:grid-cols-5 gap-4 mb-8">
-              {DONATION_LEVELS.map((level) => (
+              {DONATION_LEVELS.map(level => (
                 <div key={level.id} className="text-center">
                   <div className="text-4xl mb-2">{level.badgeEmoji}</div>
-                  <Badge className={`${level.color} border mb-2`}>{level.name}</Badge>
+                  <Badge className={`${level.color} border mb-2`}>
+                    {level.name}
+                  </Badge>
                   <p className="text-xs text-gray-600 mb-1">
                     {level.minAmount.toLocaleString()}원 ~
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    {level.maxAmount === Infinity
-                      ? "∞"
-                      : level.maxAmount.toLocaleString() + "원"}
+                    {level.maxAmount === Infinity ? '∞' : level.maxAmount.toLocaleString() + '원'}
                   </p>
                   <p className="text-xs text-gray-500 px-2 leading-snug">
                     {level.description}
@@ -697,10 +695,79 @@ export default function CommunityPage({
               ))}
             </div>
 
+            {/* Level Benefits */}
+            <div className="border-t border-gray-200 pt-6">
+              <h4 className="text-gray-900 text-center mb-2">🎁 레벨별 파트너사 후원 혜택</h4>
+              <p className="text-center text-xs text-gray-500 mb-4">
+                * 파트너 제약사의 후원으로 제공되는 리워드입니다
+              </p>
+              <div className="grid md:grid-cols-5 gap-3 text-xs">
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <div className="text-center mb-2">🌱 새싹콩</div>
+                  <p className="text-gray-500 text-xs mb-2">0 ~ 4,999원</p>
+                  <ul className="space-y-1 text-gray-600 leading-relaxed">
+                    <li>• 첫 건강기록 달성 시<br />'웰컴 체크인' 뱃지</li>
+                    <li className="mt-2 pt-2 border-t border-gray-200">
+                      <span className="text-emerald-600">🎟️ 혜택:</span><br />
+                      제약사 제품 3% 할인<br />
+                      또는 샘플 추첨권 1매
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-emerald-200">
+                  <div className="text-center mb-2">🌿 성장콩</div>
+                  <p className="text-gray-500 text-xs mb-2">5,000 ~ 9,999원</p>
+                  <ul className="space-y-1 text-gray-600 leading-relaxed">
+                    <li>• 2주 연속 기록 완료 시<br />'꾸준콩' 뱃지</li>
+                    <li className="mt-2 pt-2 border-t border-gray-200">
+                      <span className="text-emerald-600">🎟️ 혜택:</span><br />
+                      제약사 제품 5% 할인<br />
+                      또는 샘플팩 응모권
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                  <div className="text-center mb-2">😇 기부콩</div>
+                  <p className="text-gray-500 text-xs mb-2">10,000 ~ 29,999원</p>
+                  <ul className="space-y-1 text-gray-600 leading-relaxed">
+                    <li>• 누적 10,000원 돌파 시<br />'기부콩' 인증카드</li>
+                    <li className="mt-2 pt-2 border-t border-gray-200">
+                      <span className="text-blue-600">🎁 혜택:</span><br />
+                      제약사 제품 7% 할인<br />
+                      + 샘플팩 추첨권
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-amber-200">
+                  <div className="text-center mb-2">👼 황금콩</div>
+                  <p className="text-gray-500 text-xs mb-2">30,000 ~ 99,999원</p>
+                  <ul className="space-y-1 text-gray-600 leading-relaxed">
+                    <li>• 누적 기부 + 커뮤니티<br />활동으로 '영감리더' 뱃지</li>
+                    <li className="mt-2 pt-2 border-t border-gray-200">
+                      <span className="text-amber-600">✨ 혜택:</span><br />
+                      제약사 제품 10% 할인<br />
+                      또는 건강 상담 할인권
+                    </li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-purple-200">
+                  <div className="text-center mb-2">🏆 플래티넘콩</div>
+                  <p className="text-gray-500 text-xs mb-2">100,000원 이상</p>
+                  <ul className="space-y-1 text-gray-600 leading-relaxed">
+                    <li>• 거의 3년간 매일 기록한<br />전설적인 '플래티넘콩' 뱃지</li>
+                    <li className="mt-2 pt-2 border-t border-gray-200">
+                      <span className="text-purple-600">👑 혜택:</span><br />
+                      제약사 제품 12~15% 할인<br />
+                      또는 신제품 체험팩
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div className="text-center mt-8 bg-white rounded-lg p-4 border border-emerald-200">
               <p className="text-emerald-700">
-                🌱 매일 건강을 기록하고 나눔을 실천하며,
-                <br />
+                🌱 매일 건강을 기록하고 나눔을 실천하며,<br />
                 헬시콩 커뮤니티에서 함께 성장해보세요!
               </p>
             </div>

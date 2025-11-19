@@ -4,6 +4,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   doc,
   updateDoc,
   deleteDoc,
@@ -11,8 +12,11 @@ import {
   runTransaction,
   query,
   where,
-  orderBy,
+  writeBatch,
 } from "firebase/firestore";
+import { toast } from "sonner";
+
+// -------------------- 레벨 시스템 --------------------
 
 export interface DonationLevel {
   id: string;
@@ -39,33 +43,18 @@ export function getUserLevel(totalDonation: number): DonationLevel {
   );
 }
 
-export async function getUserPostsByUid(uid: string): Promise<CommunityPost[]> {
-  const q = query(collection(db, "posts"), where("authorUid", "==", uid));
-  const snap = await getDocs(q);
+// -------------------- 유틸리티 함수 --------------------
 
-  const toIso = (v:any) => v?.toDate ? v.toDate().toISOString()
-                    : v instanceof Date ? v.toISOString()
-                    : typeof v === "string" ? v : new Date().toISOString();
-
-  const posts = snap.docs.map(d => {
-    const data = d.data() as any;
-    return {
-      id: d.id,
-      author: data.author,
-      authorEmail: data.authorEmail ?? "",
-      authorUid: data.authorUid ?? "",            // ✅ 안전 처리
-      levelId: data.levelId,
-      title: data.title,
-      content: data.content,
-      likes: typeof data.likes === "number" ? data.likes : 0,
-      likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
-      createdAt: toIso(data.createdAt),
-    } as CommunityPost;
-  });
-
-  posts.sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime());
-  return posts;
+// Firestore Timestamp/Date/string 등을 안전하게 ISO string으로 변환
+function toIso(v: any): string {
+  if (!v) return new Date().toISOString();
+  if (v?.toDate && typeof v.toDate === "function") return v.toDate().toISOString();
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "string") return v;
+  return new Date().toISOString();
 }
+
+// -------------------- 데이터 인터페이스 --------------------
 
 export interface CommunityComment {
   id: string;
@@ -88,21 +77,40 @@ export interface CommunityPost {
   content: string;
   likes: number;
   likedBy: string[];
-  createdAt: string; // ISO
+  createdAt: string; // ISO string
 }
 
-function toIso(v: any): string {
-  if (!v) return new Date().toISOString();
-  if (typeof v === "string") return v;
-  if (v instanceof Date) return v.toISOString();
-  if (v && typeof v.toDate === "function") return v.toDate().toISOString();
-  return new Date().toISOString();
+// -------------------- Firestore CRUD --------------------
+
+// ✅ 특정 유저(UID)가 쓴 글 조회
+export async function getUserPostsByUid(uid: string): Promise<CommunityPost[]> {
+  const q = query(collection(db, "posts"), where("authorUid", "==", uid));
+  const snap = await getDocs(q);
+
+  const posts = snap.docs.map((d) => {
+    const data = d.data() as any;
+    return {
+      id: d.id,
+      author: data.author,
+      authorEmail: data.authorEmail ?? "",
+      authorUid: data.authorUid ?? "",
+      levelId: data.levelId,
+      title: data.title,
+      content: data.content,
+      likes: typeof data.likes === "number" ? data.likes : 0,
+      likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
+      createdAt: toIso(data.createdAt),
+    } as CommunityPost;
+  });
+
+  // 최신순 정렬
+  posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return posts;
 }
 
 // ✅ 글 생성
 export async function saveCommunityPost(
-  post: Omit<CommunityPost, "id" | "createdAt" | "likes" | "likedBy">
-  & { authorUid: string }
+  post: Omit<CommunityPost, "id" | "createdAt" | "likes" | "likedBy"> & { authorUid: string }
 ): Promise<CommunityPost> {
   const docRef = await addDoc(collection(db, "posts"), {
     ...post,
@@ -122,7 +130,7 @@ export async function saveCommunityPost(
 // ✅ 전체 글 조회
 export async function getCommunityPosts(): Promise<CommunityPost[]> {
   const snap = await getDocs(collection(db, "posts"));
-  return snap.docs.map((d) => {
+  const posts = snap.docs.map((d) => {
     const data = d.data() as any;
     return {
       id: d.id,
@@ -134,17 +142,20 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
       content: data.content,
       likes: typeof data.likes === "number" ? data.likes : 0,
       likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
-      createdAt: toIso(data.createdAt) || new Date().toISOString(),
+      createdAt: toIso(data.createdAt),
     } as CommunityPost;
   });
+
+  posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  
+  return posts;
 }
 
+// (레거시 호환용) 이메일로 글 조회
 export async function getUserPosts(authorEmail: string): Promise<CommunityPost[]> {
-  // 우선 인덱스 없이 where만
   const q = query(
     collection(db, "posts"),
-    where("authorEmail", "==", authorEmail.trim()),
-    // orderBy("createdAt", "desc") // ← 인덱스 만들기 전이면 제거
+    where("authorEmail", "==", authorEmail.trim())
   );
 
   const snap = await getDocs(q);
@@ -164,10 +175,7 @@ export async function getUserPosts(authorEmail: string): Promise<CommunityPost[]
     };
   });
 
-  // 클라이언트 정렬 (최신순)
-  rows.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return rows;
 }
 
@@ -202,13 +210,44 @@ export async function addComment(
   });
 }
 
-// ✅ 글 삭제(작성자 본인만)
+// ✅ 글 삭제 (댓글 하위 컬렉션까지 삭제 - 중요!)
 export async function deletePost(postId: string, userUid: string): Promise<boolean> {
-  const all = await getDocs(collection(db, "posts"));
-  const target = all.docs.find(
-    (d) => d.id === postId && (d.data() as any).authorUid === userUid
-  );
-  if (!target) return false;
-  await deleteDoc(doc(db, "posts", postId));
-  return true;
+  const postRef = doc(db, "posts", postId);
+
+  try {
+    // 1. 게시글 1개만 조회 (효율적)
+    const snap = await getDoc(postRef);
+    if (!snap.exists()) {
+      toast.error("존재하지 않는 게시글입니다.");
+      return false;
+    }
+
+    // 2. 권한 확인
+    const data = snap.data() as any;
+    // authorUid가 있으면 그것으로, 없으면 email로(구버전 데이터 호환)
+    if (data.authorUid !== userUid && data.authorEmail !== userUid) {
+       toast.error("삭제 권한이 없습니다.");
+       return false;
+    }
+
+    // 3. 하위 댓글 컬렉션 삭제 (Batch 처리)
+    const commentsRef = collection(db, "posts", postId, "comments");
+    const commentsSnap = await getDocs(commentsRef);
+    
+    const batch = writeBatch(db);
+    commentsSnap.forEach((c) => {
+      batch.delete(c.ref);
+    });
+    
+    // 4. 게시글 삭제
+    batch.delete(postRef);
+    
+    await batch.commit();
+    return true;
+
+  } catch (error) {
+    console.error("Delete Post Error:", error);
+    toast.error("게시글 삭제 중 오류가 발생했습니다.");
+    return false;
+  }
 }
