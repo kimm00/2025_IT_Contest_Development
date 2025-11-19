@@ -23,17 +23,17 @@ import {
   runTransaction,
   orderBy,
   onSnapshot,
+  limit,
   type Unsubscribe
 } from 'firebase/firestore';
 import { toast } from 'sonner';
 
-// --- 1. 타입 정의 수정 ---
 export interface User {
-  uid: string; // Firebase Auth의 고유 ID
+  uid: string;
   email: string;
   name: string;
   totalDonation: number;
-  createdAt: string;
+  createdAt: string;          // ISO string
   lastRecordDate: string | null;
   badges: string[];
 }
@@ -313,4 +313,18 @@ export function subscribeToUserProfile(
   });
 
   return unsubscribe;
+}
+
+// 이메일로 사용자 검색
+export async function getUserByUid(uid: string): Promise<User | null> {
+  const ref = doc(db, "users", uid);
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as User) : null;
+}
+
+// 사용자 존재 체크 유틸
+export async function userExistsByEmail(email: string): Promise<boolean> {
+  const q = query(collection(db, "users"), where("email", "==", email));
+  const snap = await getDocs(q);
+  return !snap.empty;
 }

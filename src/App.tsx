@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { logout } from './utils/auth';
 import LandingPage from "./components/LandingPage";
@@ -12,6 +12,7 @@ import PartnershipPage from "./components/PartnershipPage";
 import PrivacyPage from "./components/PrivacyPage";
 import TermsPage from "./components/TermsPage";
 import CommunityPage from "./components/CommunityPage";
+import UserProfilePage from "./components/UserProfilePage";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 
@@ -117,8 +118,23 @@ export default function App() {
         <Route path="report" element={<HealthReport />} />
         <Route path="mypage" element={<MyPage />} />
         <Route path="community" element={<CommunityPage />} />
+        <Route path="user" element={<Navigate to="/community" replace />} />
+        <Route path="user/:uid" element={<UserProfileRoute />} />
       </Route>
 
     </Routes>
+  );
+}
+
+function UserProfileRoute() {
+  const { uid } = useParams(); //  /user/:uid
+  const navigate = useNavigate(); 
+
+  if (!uid) return <Navigate to="/community" replace />;
+  return (
+    <UserProfilePage
+      userUid={uid}
+      onBack={() => navigate('/community')} // "커뮤니티로 돌아가기" 버튼 동작
+    />
   );
 }
