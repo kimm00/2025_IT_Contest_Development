@@ -21,7 +21,6 @@ import {
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Label } from "./ui/label";
 import { Alert, AlertDescription } from "./ui/alert";
 
 import {
@@ -31,11 +30,7 @@ import {
   type User,
 } from "../utils/auth";
 
-import {
-  getUserBadges,
-  ALL_BADGES,
-  type Badge as BadgeType,
-} from "../utils/badges";
+import { ALL_BADGES } from "../utils/badges";
 
 import {
   saveOpenAIKey,
@@ -48,16 +43,20 @@ import { toast } from "sonner";
 
 export default function MyPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [healthLogs, setHealthLogs] = useState<any[]>([]);
+
   const [apiKey, setApiKey] = useState(getOpenAIKey() || "");
   const [showApiKey, setShowApiKey] = useState(false);
   const [isEditingApiKey, setIsEditingApiKey] = useState(!hasOpenAIKey());
   const [loading, setLoading] = useState(true);
 
+  // 🔥 Firestore + HealthLogs 불러오기
   useEffect(() => {
     const unsubscribe = onAuthChange(async (currentUser) => {
       if (!currentUser) {
         setUser(null);
+        setProfile(null);
         setHealthLogs([]);
         setLoading(false);
         return;
@@ -65,6 +64,10 @@ export default function MyPage() {
 
       try {
         setUser(currentUser);
+
+        // 🔥 Firestore user document 불러오기
+        const profileData = await getCurrentUserProfile(currentUser.uid);
+        setProfile(profileData);
 
         // 건강 기록 불러오기
         const logs = await getUserHealthLogs();
@@ -80,34 +83,8 @@ export default function MyPage() {
   }, []);
 
   const getMemberSince = () => {
-    if (!user?.createdAt) return "";
-    return new Date(user.createdAt).toLocaleDateString("ko-KR");
-  };
-
-  const getConsecutiveDays = () => {
-    if (healthLogs.length === 0) return 0;
-
-    const dates = healthLogs.map(
-      (log) => new Date(log.recordedAt).toISOString().split("T")[0]
-    );
-
-    const uniqueDates = [...new Set(dates)].sort().reverse();
-    let consecutive = 1;
-
-    const today = new Date().toISOString().split("T")[0];
-    if (uniqueDates[0] !== today) return 0;
-
-    for (let i = 1; i < uniqueDates.length; i++) {
-      const current = new Date(uniqueDates[i - 1]);
-      const prev = new Date(uniqueDates[i]);
-      const diffDays =
-        (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-
-      if (diffDays === 1) consecutive++;
-      else break;
-    }
-
-    return consecutive;
+    if (!profile?.createdAt) return "";
+    return new Date(profile.createdAt).toLocaleDateString("ko-KR");
   };
 
   const handleSaveApiKey = () => {
@@ -135,7 +112,7 @@ export default function MyPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         로그인 후 이용 가능합니다.
@@ -143,13 +120,12 @@ export default function MyPage() {
     );
   }
 
-  const hasAngelBadge = user.totalDonation >= 10000;
-  const hasChampionBadge = healthLogs.length >= 30;
-  const hasDedicatedBadge = healthLogs.length >= 7;
+  // Firestore 기반 뱃지 획득 여부
+  const userBadges = profile.badges ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-      {/* 헤더 */}
+      {/* 상단 배너 */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <h1 className="text-3xl mb-2">마이페이지</h1>
@@ -159,9 +135,7 @@ export default function MyPage() {
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ===============================
-              왼쪽 패널
-          =============================== */}
+          {/* 왼쪽 패널 */}
           <div className="lg:col-span-2 space-y-6">
             {/* 프로필 카드 */}
             <Card>
@@ -172,12 +146,12 @@ export default function MyPage() {
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white text-2xl">
-                    {user.email.charAt(0).toUpperCase()}
+                    {profile.email.charAt(0).toUpperCase()}
                   </div>
 
                   <div>
-                    <h3 className="text-xl mb-1">{user.email.split("@")[0]}</h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <h3 className="text-xl mb-1">{profile.name}</h3>
+                    <p className="text-sm text-gray-600">{profile.email}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       가입일: {getMemberSince()}
                     </p>
@@ -192,7 +166,7 @@ export default function MyPage() {
                       <span className="text-sm">누적 기부금</span>
                     </div>
                     <p className="text-2xl">
-                      ₩{user.totalDonation.toLocaleString()}
+                      ₩{profile.totalDonation.toLocaleString()}
                     </p>
                   </div>
 
@@ -207,7 +181,7 @@ export default function MyPage() {
               </CardContent>
             </Card>
 
-            {/* 기부 현황 */}
+            {/* 기부 임팩트 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -222,7 +196,7 @@ export default function MyPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-600">총 기부금</p>
                     <p className="text-3xl text-emerald-700">
-                      ₩{user.totalDonation.toLocaleString()}
+                      ₩{profile.totalDonation.toLocaleString()}
                     </p>
                   </div>
 
@@ -231,7 +205,7 @@ export default function MyPage() {
                       className="bg-emerald-600 h-2 rounded-full"
                       style={{
                         width: `${Math.min(
-                          (user.totalDonation / 10000) * 100,
+                          (profile.totalDonation / 10000) * 100,
                           100
                         )}%`,
                       }}
@@ -240,10 +214,10 @@ export default function MyPage() {
 
                   <p className="text-sm text-gray-600">
                     다음 뱃지까지{" "}
-                    {hasAngelBadge
+                    {profile.totalDonation >= 10000
                       ? "달성!"
                       : `₩${(
-                          10000 - user.totalDonation
+                          10000 - profile.totalDonation
                         ).toLocaleString()} 남음`}
                   </p>
                 </div>
@@ -266,7 +240,6 @@ export default function MyPage() {
                   </AlertDescription>
                 </Alert>
 
-                {/* 입력 폼 */}
                 {isEditingApiKey ? (
                   <>
                     <div className="relative">
@@ -329,9 +302,7 @@ export default function MyPage() {
             </Card>
           </div>
 
-          {/* ===============================
-              오른쪽: 뱃지 컬렉션
-          =============================== */}
+          {/* 오른쪽: 뱃지 컬렉션 */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -340,124 +311,53 @@ export default function MyPage() {
                   나의 뱃지 컬렉션
                 </CardTitle>
                 <CardDescription>
-                  {getUserBadges(user.email).length}개 / {ALL_BADGES.length}개
+                  {userBadges.length}개 / {ALL_BADGES.length}개
                 </CardDescription>
               </CardHeader>
 
               <CardContent>
                 <div className="space-y-6">
-                  {/* 루틴 뱃지 */}
-                  <div>
-                    <h4 className="text-sm mb-3 text-gray-700">🌟 루틴 뱃지</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {ALL_BADGES.filter((b) => b.category === "routine").map(
-                        (badge) => {
-                          const earned = getUserBadges(user.email).includes(
-                            badge.id
-                          );
-                          return (
-                            <div
-                              key={badge.id}
-                              className={`p-3 rounded-lg border-2 ${
-                                earned
-                                  ? badge.color
-                                  : "bg-gray-50 border-gray-200 opacity-60"
-                              }`}
-                            >
-                              <div className="text-center">
-                                <div className="text-3xl">
-                                  {earned ? badge.emoji : "🔒"}
-                                </div>
-                                <p className="text-xs">{badge.nameKo}</p>
-                                <p className="text-xs text-gray-500">
-                                  {badge.condition}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  </div>
+                  {/* 카테고리별 뱃지 */}
+                  {["routine", "donation", "challenge"].map((category) => (
+                    <div key={category}>
+                      <h4 className="text-sm mb-3 text-gray-700">
+                        {category === "routine"
+                          ? "🌟 루틴 뱃지"
+                          : category === "donation"
+                          ? "💚 기부 뱃지"
+                          : "🔥 도전 뱃지"}
+                      </h4>
 
-                  {/* 기부 뱃지 */}
-                  <div>
-                    <h4 className="text-sm mb-3 text-gray-700">💚 기부 뱃지</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {ALL_BADGES.filter((b) => b.category === "donation").map(
-                        (badge) => {
-                          const earned = getUserBadges(user.email).includes(
-                            badge.id
-                          );
-                          return (
-                            <div
-                              key={badge.id}
-                              className={`p-3 rounded-lg border-2 ${
-                                earned
-                                  ? badge.color
-                                  : "bg-gray-50 border-gray-200 opacity-60"
-                              }`}
-                            >
-                              <div className="text-center">
-                                <div className="text-3xl">
-                                  {earned ? badge.emoji : "🔒"}
+                      <div className="grid grid-cols-2 gap-3">
+                        {ALL_BADGES.filter((b) => b.category === category).map(
+                          (badge) => {
+                            const earned = userBadges.includes(badge.id);
+                            return (
+                              <div
+                                key={badge.id}
+                                className={`p-3 rounded-lg border-2 ${
+                                  earned
+                                    ? badge.color
+                                    : "bg-gray-50 border-gray-200 opacity-60"
+                                }`}
+                              >
+                                <div className="text-center">
+                                  <div className="text-3xl">
+                                    {earned ? badge.emoji : "🔒"}
+                                  </div>
+                                  <p className="text-xs">{badge.nameKo}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {badge.condition}
+                                  </p>
                                 </div>
-                                <p className="text-xs">{badge.nameKo}</p>
-                                <p className="text-xs text-gray-500">
-                                  {badge.condition}
-                                </p>
                               </div>
-                            </div>
-                          );
-                        }
-                      )}
+                            );
+                          }
+                        )}
+                      </div>
                     </div>
-                  </div>
-
-                  {/* 도전 뱃지 */}
-                  <div>
-                    <h4 className="text-sm mb-3 text-gray-700">🔥 도전 뱃지</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {ALL_BADGES.filter((b) => b.category === "challenge").map(
-                        (badge) => {
-                          const earned = getUserBadges(user.email).includes(
-                            badge.id
-                          );
-                          return (
-                            <div
-                              key={badge.id}
-                              className={`p-3 rounded-lg border-2 ${
-                                earned
-                                  ? badge.color
-                                  : "bg-gray-50 border-gray-200 opacity-60"
-                              }`}
-                            >
-                              <div className="text-center">
-                                <div className="text-3xl">
-                                  {earned ? badge.emoji : "🔒"}
-                                </div>
-                                <p className="text-xs">{badge.nameKo}</p>
-                                <p className="text-xs text-gray-500">
-                                  {badge.condition}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* 격려 메시지 */}
-            <Card className="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white">
-              <CardContent className="pt-6">
-                <h3 className="text-xl mb-3">계속 진행하세요! 💪</h3>
-                <p className="text-emerald-100 text-sm">
-                  매일의 작은 기록이 큰 변화를 만듭니다.
-                </p>
               </CardContent>
             </Card>
           </div>
