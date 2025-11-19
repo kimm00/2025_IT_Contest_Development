@@ -13,6 +13,7 @@ import {
   query,
   where,
   writeBatch,
+  increment,
 } from "firebase/firestore";
 import { toast } from "sonner";
 
@@ -78,6 +79,7 @@ export interface CommunityPost {
   likes: number;
   likedBy: string[];
   createdAt: string; // ISO string
+  commentCount?: number;
 }
 
 // -------------------- Firestore CRUD --------------------
@@ -100,10 +102,10 @@ export async function getUserPostsByUid(uid: string): Promise<CommunityPost[]> {
       likes: typeof data.likes === "number" ? data.likes : 0,
       likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
       createdAt: toIso(data.createdAt),
+      commentCount: typeof data.commentCount === "number" ? data.commentCount : 0, // ⭐ 추가
     } as CommunityPost;
   });
 
-  // 최신순 정렬
   posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return posts;
 }
@@ -143,11 +145,11 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
       likes: typeof data.likes === "number" ? data.likes : 0,
       likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
       createdAt: toIso(data.createdAt),
+      commentCount: typeof data.commentCount === "number" ? data.commentCount : 0, // ⭐
     } as CommunityPost;
   });
 
   posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  
   return posts;
 }
 
@@ -172,6 +174,7 @@ export async function getUserPosts(authorEmail: string): Promise<CommunityPost[]
       likes: typeof data.likes === "number" ? data.likes : 0,
       likedBy: Array.isArray(data.likedBy) ? data.likedBy : [],
       createdAt: toIso(data.createdAt),
+      commentCount: typeof data.commentCount === "number" ? data.commentCount : 0, // ⭐
     };
   });
 
@@ -203,10 +206,18 @@ export async function addComment(
   postId: string,
   comment: Omit<CommunityComment, "id" | "createdAt">
 ): Promise<void> {
+  const postRef = doc(db, "posts", postId);
+
+  // 1) 댓글 문서 추가
   await addDoc(collection(db, "posts", postId, "comments"), {
     ...comment,
     createdAt: serverTimestamp(),
     updatedAt: null,
+  });
+
+  // 2) 해당 게시글의 commentCount + 1
+  await updateDoc(postRef, {
+    commentCount: increment(1),   // ⭐ 여기서 숫자 필드 증가
   });
 }
 
