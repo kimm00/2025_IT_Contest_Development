@@ -11,7 +11,7 @@ export default function TermsPage() {
         <div className="mx-auto max-w-4xl px-6 lg:px-8 py-6">
           <Button variant="ghost" asChild className="text-emerald-600 hover:text-emerald-700 mb-4 px-0 hover:bg-emerald-50">
             <Link
-              to="/"
+              to="/dashboard"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               돌아가기
