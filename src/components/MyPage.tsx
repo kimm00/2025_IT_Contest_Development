@@ -1,14 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Award,
-  Heart,
-  TrendingUp,
-  Calendar,
-  Key,
-  Eye,
-  EyeOff,
-  Sparkles,
-} from "lucide-react";
+import { Award, Heart, TrendingUp, Eye, EyeOff, Sparkles } from "lucide-react";
 
 import {
   Card,
@@ -21,7 +12,6 @@ import {
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Alert, AlertDescription } from "./ui/alert";
 
 import {
   onAuthChange,
@@ -51,7 +41,6 @@ export default function MyPage() {
   const [isEditingApiKey, setIsEditingApiKey] = useState(!hasOpenAIKey());
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Firestore + HealthLogs 불러오기
   useEffect(() => {
     const unsubscribe = onAuthChange(async (currentUser) => {
       if (!currentUser) {
@@ -65,15 +54,13 @@ export default function MyPage() {
       try {
         setUser(currentUser);
 
-        // 🔥 Firestore user document 불러오기
         const profileData = await getCurrentUserProfile(currentUser.uid);
         setProfile(profileData);
 
-        // 건강 기록 불러오기
         const logs = await getUserHealthLogs();
         setHealthLogs(logs);
       } catch (err) {
-        console.error("Failed to load MyPage data:", err);
+        console.error("Failed to load MyPage:", err);
       } finally {
         setLoading(false);
       }
@@ -106,7 +93,7 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-xl">
         마이페이지 로딩 중...
       </div>
     );
@@ -120,22 +107,21 @@ export default function MyPage() {
     );
   }
 
-  // Firestore 기반 뱃지 획득 여부
   const userBadges = profile.badges ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-      {/* 상단 배너 */}
+      {/* 상단 헤더 */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <h1 className="text-3xl mb-2">마이페이지</h1>
+          <h1 className="text-3xl mb-2 font-bold">마이페이지</h1>
           <p className="text-emerald-100">나의 건강 여정과 기부 현황</p>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 왼쪽 패널 */}
+          {/* 왼쪽 2칸 */}
           <div className="lg:col-span-2 space-y-6">
             {/* 프로필 카드 */}
             <Card>
@@ -150,7 +136,9 @@ export default function MyPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-xl mb-1">{profile.name}</h3>
+                    <h3 className="text-xl font-semibold mb-1">
+                      {profile.name}
+                    </h3>
                     <p className="text-sm text-gray-600">{profile.email}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       가입일: {getMemberSince()}
@@ -158,24 +146,26 @@ export default function MyPage() {
                   </div>
                 </div>
 
-                {/* 통계 */}
+                {/* 간격 통일 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-emerald-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 text-emerald-700 mb-2">
+                    <div className="flex items-center gap-2 text-emerald-700 mb-1">
                       <Heart className="w-4 h-4" />
                       <span className="text-sm">누적 기부금</span>
                     </div>
-                    <p className="text-2xl">
+                    <p className="text-2xl font-semibold">
                       ₩{profile.totalDonation.toLocaleString()}
                     </p>
                   </div>
 
                   <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-700 mb-2">
+                    <div className="flex items-center gap-2 text-blue-700 mb-1">
                       <TrendingUp className="w-4 h-4" />
                       <span className="text-sm">전체 기록</span>
                     </div>
-                    <p className="text-2xl">{healthLogs.length}회</p>
+                    <p className="text-2xl font-semibold">
+                      {healthLogs.length}회
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -191,18 +181,19 @@ export default function MyPage() {
                 <CardDescription>나의 건강 습관이 만드는 변화</CardDescription>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="space-y-5">
                 <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 rounded-lg space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-600">총 기부금</p>
-                    <p className="text-3xl text-emerald-700">
+                    <p className="text-3xl text-emerald-700 font-bold">
                       ₩{profile.totalDonation.toLocaleString()}
                     </p>
                   </div>
 
+                  {/* 진행 바 */}
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-emerald-600 h-2 rounded-full"
+                      className="bg-emerald-600 h-2 rounded-full transition-all"
                       style={{
                         width: `${Math.min(
                           (profile.totalDonation / 10000) * 100,
@@ -220,26 +211,50 @@ export default function MyPage() {
                           10000 - profile.totalDonation
                         ).toLocaleString()} 남음`}
                   </p>
+
+                  <p className="text-sm text-gray-700 mt-4 flex items-center gap-1">
+                    💡 <span>알고 계셨나요?</span>
+                  </p>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    나의 기부금으로 다른 환우분들이 혈당 측정기, 혈압계 등 건강
+                    관리에 필요한 기기를 지원받을 수 있습니다.
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* API 키 설정 */}
-            <Card className="border-2 border-purple-200">
+            {/* AI 건강 분석 */}
+            <Card className="p-6 border-2 border-purple-200 bg-purple-50/40">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
                   AI 건강 분석 설정
                 </CardTitle>
+                <CardDescription className="text-sm text-gray-600">
+                  OpenAI API를 연결하여 주간 AI 건강 리포트를 받아보세요.
+                </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <Alert className="bg-purple-50 border-purple-200">
-                  <AlertDescription className="text-sm text-gray-700">
-                    GPT 기반 주간 AI 건강 분석을 이용하려면 API 키가 필요합니다.
-                  </AlertDescription>
-                </Alert>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  GPT-4가 건강 기록을 분석하고 맞춤형 조언을 제공합니다. API
+                  키는 브라우저(localStorage)에만 저장됩니다.
+                </p>
 
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">상태:</span>
+                  <Badge
+                    className={
+                      hasOpenAIKey()
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-300 text-black"
+                    }
+                  >
+                    {hasOpenAIKey() ? "연결됨" : "미연결"}
+                  </Badge>
+                </div>
+
+                {/* API 입력 */}
                 {isEditingApiKey ? (
                   <>
                     <div className="relative">
@@ -249,25 +264,19 @@ export default function MyPage() {
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder="sk-..."
                       />
-
                       <Button
-                        type="button"
                         variant="ghost"
                         className="absolute right-0 top-0 h-full px-3"
                         onClick={() => setShowApiKey(!showApiKey)}
                       >
-                        {showApiKey ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
+                        {showApiKey ? <EyeOff /> : <Eye />}
                       </Button>
                     </div>
 
                     <div className="flex gap-2">
                       <Button
                         onClick={handleSaveApiKey}
-                        className="flex-1 bg-purple-600 hover:bg-purple-700"
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                       >
                         저장
                       </Button>
@@ -291,7 +300,7 @@ export default function MyPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="text-red-600"
+                      className="text-red-600 hover:bg-red-50"
                       onClick={handleRemoveApiKey}
                     >
                       삭제
@@ -302,7 +311,7 @@ export default function MyPage() {
             </Card>
           </div>
 
-          {/* 오른쪽: 뱃지 컬렉션 */}
+          {/* 오른쪽 뱃지 컬렉션 */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -317,7 +326,6 @@ export default function MyPage() {
 
               <CardContent>
                 <div className="space-y-6">
-                  {/* 카테고리별 뱃지 */}
                   {["routine", "donation", "challenge"].map((category) => (
                     <div key={category}>
                       <h4 className="text-sm mb-3 text-gray-700">
@@ -328,7 +336,7 @@ export default function MyPage() {
                           : "🔥 도전 뱃지"}
                       </h4>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {ALL_BADGES.filter((b) => b.category === category).map(
                           (badge) => {
                             const earned = userBadges.includes(badge.id);
@@ -345,8 +353,10 @@ export default function MyPage() {
                                   <div className="text-3xl">
                                     {earned ? badge.emoji : "🔒"}
                                   </div>
-                                  <p className="text-xs">{badge.nameKo}</p>
-                                  <p className="text-xs text-gray-500">
+                                  <p className="text-xs mt-1 font-medium">
+                                    {badge.nameKo}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
                                     {badge.condition}
                                   </p>
                                 </div>
