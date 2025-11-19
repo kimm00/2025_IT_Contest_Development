@@ -97,7 +97,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">로딩 중...</div>;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">대시보드 로딩 중...</div>;
   }
   
   if (!user) {

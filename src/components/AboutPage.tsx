@@ -11,7 +11,7 @@ export default function AboutPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8 py-6">
           <Button variant="ghost" asChild className="text-emerald-600 hover:text-emerald-700 mb-4 px-0 hover:bg-emerald-50">
             <Link
-              to="/"
+              to="/dashboard"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               돌아가기
@@ -38,8 +38,12 @@ export default function AboutPage() {
                 헬시콩(HealthyKong)은 <strong className="text-emerald-700">개인의 건강 관리가 사회적 기여로 연결되는</strong> 혁신적인 스마트 헬스케어 기부 챌린지 플랫폼입니다.
               </p>
               <p className="text-gray-600 leading-relaxed">
-                당뇨병, 고혈압 등 만성질환으로 고통받는 많은 분들이 꾸준한 건강 관리의 어려움을 겪고 있습니다. 
+                당뇨병, 고혈압 등 만성질환으로 고통받는 많은 분들이 꾸준한 건강 관리의 어려움을 겪고 있습니다.
+              </p>
+              <p className="text-gray-600 leading-relaxed">
                 동시에 경제적 어려움으로 인해 적절한 치료와 관리를 받지 못하는 환우들도 많습니다. 
+              </p>
+              <p className="text-gray-600 leading-relaxed">
                 헬시콩은 이 두 문제를 동시에 해결하고자 합니다.
               </p>
             </CardContent>
@@ -79,7 +83,7 @@ export default function AboutPage() {
             <Card className="bg-white shadow-sm">
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-2xl">🏆</span>
+                  <span className="text-2xl">🌳</span>
                 </div>
                 <h3 className="text-gray-900 mb-3">3. 함께 성장</h3>
                 <p className="text-gray-600">
@@ -145,12 +149,12 @@ export default function AboutPage() {
         <section className="mb-16">
           <Card className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg">
             <CardContent className="p-12 text-center">
-              <h2 className="text-white mb-4">우리의 비전</h2>
+              <h2 className="text-white mb-8">우리의 비전</h2>
               <p className="text-xl mb-6 opacity-90">
                 "모든 만성질환자가 경제적 부담 없이<br />
                 건강한 삶을 영위할 수 있는 세상을 만듭니다."
               </p>
-              <p className="opacity-80">
+              <p className="mb-6 opacity-80">
                 헬시콩은 기술과 공감을 결합하여 건강 형평성을 실현하고,<br />
                 개인의 작은 실천이 사회 전체의 건강을 증진시키는 생태계를 구축합니다.
               </p>
@@ -164,8 +168,7 @@ export default function AboutPage() {
           <Card className="bg-white shadow-sm">
             <CardContent className="p-8">
               <p className="text-gray-700 leading-relaxed mb-4">
-                헬시콩 팀은 헬스케어 전문가, 데이터 과학자, UX/UI 디자이너, 
-                소프트웨어 엔지니어로 구성된 다학제적 팀입니다.
+                헬시콩 팀은 대학생 개발자들로 구성된 팀입니다.
               </p>
               <p className="text-gray-700 leading-relaxed mb-4">
                 우리는 만성질환 관리의 어려움을 직접 경험한 사람들, 
