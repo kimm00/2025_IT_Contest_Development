@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { logout } from './utils/auth';
 import LandingPage from "./components/LandingPage";
@@ -13,6 +13,7 @@ import PrivacyPage from "./components/PrivacyPage";
 import TermsPage from "./components/TermsPage";
 import CommunityPage from "./components/CommunityPage";
 import UserProfilePage from "./components/UserProfilePage";
+import ScrollToTop from "./components/ScrollToTop";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 
@@ -82,47 +83,50 @@ export default function App() {
   const handleGoToLanding = () => navigate('/');
   
   return (
-    <Routes>
-      <Route 
-        path="/" 
-        element={<LandingPage 
-          onNavigateToLogin={handleGoToLogin}
-        />} 
-      />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/partnership" element={<PartnershipPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-
-      <Route element={<PublicOnlyLayout />}>
+    <>
+      <ScrollToTop />
+      <Routes>
         <Route 
-          path="/login" 
-          element={<LoginPage 
-            onLoginSuccess={handleLoginSuccess}
-            onNavigateToSignup={handleGoToSignup}
-            onBackToLanding={handleGoToLanding}
-          />} 
-        />
-        <Route 
-          path="/signup" 
-          element={<SignupPage 
-            onSignupSuccess={handleSignupSuccess}
+          path="/" 
+          element={<LandingPage 
             onNavigateToLogin={handleGoToLogin}
-            onBackToLanding={handleGoToLanding}
           />} 
         />
-      </Route>
-      
-      <Route element={<ProtectedLayout />}>
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="report" element={<HealthReport />} />
-        <Route path="mypage" element={<MyPage />} />
-        <Route path="community" element={<CommunityPage />} />
-        <Route path="user" element={<Navigate to="/community" replace />} />
-        <Route path="user/:uid" element={<UserProfileRoute />} />
-      </Route>
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/partnership" element={<PartnershipPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
 
-    </Routes>
+        <Route element={<PublicOnlyLayout />}>
+          <Route 
+            path="/login" 
+            element={<LoginPage 
+              onLoginSuccess={handleLoginSuccess}
+              onNavigateToSignup={handleGoToSignup}
+              onBackToLanding={handleGoToLanding}
+            />} 
+          />
+          <Route 
+            path="/signup" 
+            element={<SignupPage 
+              onSignupSuccess={handleSignupSuccess}
+              onNavigateToLogin={handleGoToLogin}
+              onBackToLanding={handleGoToLanding}
+            />} 
+          />
+        </Route>
+        
+        <Route element={<ProtectedLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="report" element={<HealthReport />} />
+          <Route path="mypage" element={<MyPage />} />
+          <Route path="community" element={<CommunityPage />} />
+          <Route path="user" element={<Navigate to="/community" replace />} />
+          <Route path="user/:uid" element={<UserProfileRoute />} />
+        </Route>
+
+      </Routes>
+    </>
   );
 }
 
