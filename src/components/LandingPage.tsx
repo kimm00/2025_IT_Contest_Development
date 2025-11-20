@@ -5,8 +5,12 @@ import ImpactSection from "./ImpactSection";
 import CTASection from "./CTASection";
 import Footer from "./Footer";
 
+import { Page } from "../types/navigation";
+
 interface LandingPageProps {
   onNavigateToLogin: () => void;
+  onNavigateToSignup: () => void; 
+  onNavigate: (page: Page) => void;
 }
 
 export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {

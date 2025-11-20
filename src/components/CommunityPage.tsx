@@ -45,7 +45,7 @@ type CommunityComment = {
   id: string;
   author: string;
   authorEmail: string;
-  authorUid:string;
+  authorUid: string;
   levelId: string;
   content: string;
   createdAt: any; // Firestore Timestamp | string | Date
@@ -104,14 +104,16 @@ export default function CommunityPage({
       const withCounts = await Promise.all(
         data.map(async (p) => {
           // 댓글 서브컬렉션 로드
-          const commentsSnap = await getDocs(collection(db, "posts", p.id, "comments"));
+          const commentsSnap = await getDocs(
+            collection(db, "posts", p.id, "comments")
+          );
           const comments: CommunityComment[] = commentsSnap.docs.map((d) => {
             const c = d.data() as any;
             return {
               id: d.id,
               author: c.author,
               authorEmail: c.authorEmail,
-              authorUid: c.authorUid ?? "", 
+              authorUid: c.authorUid ?? "",
               levelId: c.levelId,
               content: c.content,
               createdAt: toIso(c.createdAt),
@@ -165,7 +167,7 @@ export default function CommunityPage({
     await saveCommunityPost({
       author: user.name,
       authorEmail: user.email,
-      authorUid: user.uid,          // ✅ 추가
+      authorUid: user.uid, // ✅ uid 저장
       levelId: userLevel.id,
       title: newPostTitle,
       content: newPostContent,
@@ -245,7 +247,11 @@ export default function CommunityPage({
   };
 
   // 프로필로 이동 (App 콜백 있으면 사용, 없으면 URL 네비게이션)
-  const goProfile = (uid: string) => {
+  const goProfile = (uid?: string) => {
+    if (!uid) {
+      toast.error("프로필 이동 불가: 사용자 정보가 없습니다.");
+      return;
+    }
     if (onViewUserProfile) {
       onViewUserProfile(uid);
     } else {
@@ -374,7 +380,10 @@ export default function CommunityPage({
                         {DONATION_LEVELS.find((l) => l.id === selectedLevel)?.name} 레벨
                       </h3>
                       <p className="text-gray-600 text-sm">
-                        {DONATION_LEVELS.find((l) => l.id === selectedLevel)?.description}
+                        {
+                          DONATION_LEVELS.find((l) => l.id === selectedLevel)
+                            ?.description
+                        }
                       </p>
                     </div>
                   </div>
@@ -414,10 +423,7 @@ export default function CommunityPage({
                                 {/* 작성자 클릭 시 프로필 */}
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    if (post.authorUid) navigate(`/user/${post.authorUid}`); // ✅ 가드
-                                    else toast.error("프로필 이동 불가: 작성자 식별자가 없습니다.");
-                                  }}
+                                  onClick={() => goProfile(post.authorUid as any)}
                                   className="text-gray-900 underline-offset-2 hover:underline hover:text-emerald-700"
                                   title={`${post.author} 프로필 보기`}
                                 >
@@ -511,7 +517,10 @@ export default function CommunityPage({
 
                                 // 댓글 삭제
                                 const removeComment = async () => {
-                                  if (!confirm("정말 이 댓글을 삭제하시겠습니까?")) return;
+                                  if (
+                                    !confirm("정말 이 댓글을 삭제하시겠습니까?")
+                                  )
+                                    return;
                                   try {
                                     const commentRef = doc(
                                       db,
@@ -530,7 +539,10 @@ export default function CommunityPage({
                                 };
 
                                 return (
-                                  <div key={comment.id} className="bg-gray-50 rounded-lg p-4">
+                                  <div
+                                    key={comment.id}
+                                    className="bg-gray-50 rounded-lg p-4"
+                                  >
                                     <div className="flex items-center gap-2 mb-2">
                                       <span className="text-xl">
                                         {commentLevel.badgeEmoji}
@@ -538,10 +550,9 @@ export default function CommunityPage({
                                       {/* 댓글 작성자 클릭 */}
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          if (comment.authorUid) navigate(`/user/${comment.authorUid}`); // ✅ 가드
-                                          else toast.error("프로필 이동 불가: 작성자 식별자가 없습니다.");
-                                        }}
+                                        onClick={() =>
+                                          goProfile(comment.authorUid as any)
+                                        }
                                         className="text-gray-900 text-sm underline-offset-2 hover:underline hover:text-emerald-700"
                                       >
                                         {comment.author}
@@ -604,7 +615,9 @@ export default function CommunityPage({
                                       <div className="space-y-2">
                                         <Textarea
                                           value={editContent}
-                                          onChange={(e) => setEditContent(e.target.value)}
+                                          onChange={(e) =>
+                                            setEditContent(e.target.value)
+                                          }
                                           rows={2}
                                           className="resize-none"
                                         />
@@ -667,16 +680,18 @@ export default function CommunityPage({
         {/* Level Guide */}
         <Card className="mt-8 bg-gradient-to-br from-emerald-50 to-blue-50">
           <CardContent className="p-8">
-            <h3 className="text-gray-900 mb-2 text-center">🏆 헬시콩 커뮤니티 레벨 가이드</h3>
+            <h3 className="text-gray-900 mb-2 text-center">
+              🏆 헬시콩 커뮤니티 레벨 가이드
+            </h3>
             <p className="text-gray-600 text-sm text-center mb-2">
               기부금 누적액에 따라 레벨이 올라가요!
             </p>
             <p className="text-xs text-gray-500 text-center mb-6">
               💡 하루 최대 100원 × 1,000일 = 플래티넘콩 달성 (약 3년)
             </p>
-            
+
             <div className="grid md:grid-cols-5 gap-4 mb-8">
-              {DONATION_LEVELS.map(level => (
+              {DONATION_LEVELS.map((level) => (
                 <div key={level.id} className="text-center">
                   <div className="text-4xl mb-2">{level.badgeEmoji}</div>
                   <Badge className={`${level.color} border mb-2`}>
@@ -686,7 +701,9 @@ export default function CommunityPage({
                     {level.minAmount.toLocaleString()}원 ~
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
-                    {level.maxAmount === Infinity ? '∞' : level.maxAmount.toLocaleString() + '원'}
+                    {level.maxAmount === Infinity
+                      ? "∞"
+                      : level.maxAmount.toLocaleString() + "원"}
                   </p>
                   <p className="text-xs text-gray-500 px-2 leading-snug">
                     {level.description}
@@ -697,7 +714,9 @@ export default function CommunityPage({
 
             {/* Level Benefits */}
             <div className="border-t border-gray-200 pt-6">
-              <h4 className="text-gray-900 text-center mb-2">🎁 레벨별 파트너사 후원 혜택</h4>
+              <h4 className="text-gray-900 text-center mb-2">
+                🎁 레벨별 파트너사 후원 혜택
+              </h4>
               <p className="text-center text-xs text-gray-500 mb-4">
                 * 파트너 제약사의 후원으로 제공되는 리워드입니다
               </p>
@@ -706,10 +725,16 @@ export default function CommunityPage({
                   <div className="text-center mb-2">🌱 새싹콩</div>
                   <p className="text-gray-500 text-xs mb-2">0 ~ 4,999원</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
-                    <li>• 첫 건강기록 달성 시<br />'웰컴 체크인' 뱃지</li>
+                    <li>
+                      • 첫 건강기록 달성 시
+                      <br />
+                      '웰컴 체크인' 뱃지
+                    </li>
                     <li className="mt-2 pt-2 border-t border-gray-200">
-                      <span className="text-emerald-600">🎟️ 혜택:</span><br />
-                      제약사 제품 3% 할인<br />
+                      <span className="text-emerald-600">🎟️ 혜택:</span>
+                      <br />
+                      제약사 제품 3% 할인
+                      <br />
                       또는 샘플 추첨권 1매
                     </li>
                   </ul>
@@ -718,10 +743,16 @@ export default function CommunityPage({
                   <div className="text-center mb-2">🌿 성장콩</div>
                   <p className="text-gray-500 text-xs mb-2">5,000 ~ 9,999원</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
-                    <li>• 2주 연속 기록 완료 시<br />'꾸준콩' 뱃지</li>
+                    <li>
+                      • 2주 연속 기록 완료 시
+                      <br />
+                      '꾸준콩' 뱃지
+                    </li>
                     <li className="mt-2 pt-2 border-t border-gray-200">
-                      <span className="text-emerald-600">🎟️ 혜택:</span><br />
-                      제약사 제품 5% 할인<br />
+                      <span className="text-emerald-600">🎟️ 혜택:</span>
+                      <br />
+                      제약사 제품 5% 할인
+                      <br />
                       또는 샘플팩 응모권
                     </li>
                   </ul>
@@ -730,10 +761,16 @@ export default function CommunityPage({
                   <div className="text-center mb-2">😇 기부콩</div>
                   <p className="text-gray-500 text-xs mb-2">10,000 ~ 29,999원</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
-                    <li>• 누적 10,000원 돌파 시<br />'기부콩' 인증카드</li>
+                    <li>
+                      • 누적 10,000원 돌파 시
+                      <br />
+                      '기부콩' 인증카드
+                    </li>
                     <li className="mt-2 pt-2 border-t border-gray-200">
-                      <span className="text-blue-600">🎁 혜택:</span><br />
-                      제약사 제품 7% 할인<br />
+                      <span className="text-blue-600">🎁 혜택:</span>
+                      <br />
+                      제약사 제품 7% 할인
+                      <br />
                       + 샘플팩 추첨권
                     </li>
                   </ul>
@@ -742,10 +779,16 @@ export default function CommunityPage({
                   <div className="text-center mb-2">👼 황금콩</div>
                   <p className="text-gray-500 text-xs mb-2">30,000 ~ 99,999원</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
-                    <li>• 누적 기부 + 커뮤니티<br />활동으로 '영감리더' 뱃지</li>
+                    <li>
+                      • 누적 기부 + 커뮤니티
+                      <br />
+                      활동으로 '영감리더' 뱃지
+                    </li>
                     <li className="mt-2 pt-2 border-t border-gray-200">
-                      <span className="text-amber-600">✨ 혜택:</span><br />
-                      제약사 제품 10% 할인<br />
+                      <span className="text-amber-600">✨ 혜택:</span>
+                      <br />
+                      제약사 제품 10% 할인
+                      <br />
                       또는 건강 상담 할인권
                     </li>
                   </ul>
@@ -754,10 +797,16 @@ export default function CommunityPage({
                   <div className="text-center mb-2">🏆 플래티넘콩</div>
                   <p className="text-gray-500 text-xs mb-2">100,000원 이상</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
-                    <li>• 거의 3년간 매일 기록한<br />전설적인 '플래티넘콩' 뱃지</li>
+                    <li>
+                      • 거의 3년간 매일 기록한
+                      <br />
+                      전설적인 '플래티넘콩' 뱃지
+                    </li>
                     <li className="mt-2 pt-2 border-t border-gray-200">
-                      <span className="text-purple-600">👑 혜택:</span><br />
-                      제약사 제품 12~15% 할인<br />
+                      <span className="text-purple-600">👑 혜택:</span>
+                      <br />
+                      제약사 제품 12~15% 할인
+                      <br />
                       또는 신제품 체험팩
                     </li>
                   </ul>
@@ -767,7 +816,8 @@ export default function CommunityPage({
 
             <div className="text-center mt-8 bg-white rounded-lg p-4 border border-emerald-200">
               <p className="text-emerald-700">
-                🌱 매일 건강을 기록하고 나눔을 실천하며,<br />
+                🌱 매일 건강을 기록하고 나눔을 실천하며,
+                <br />
                 헬시콩 커뮤니티에서 함께 성장해보세요!
               </p>
             </div>

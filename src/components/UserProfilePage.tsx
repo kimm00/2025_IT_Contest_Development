@@ -1,6 +1,5 @@
 // src/pages/UserProfilePage.tsx
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, Heart, Calendar, TrendingUp, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -8,9 +7,12 @@ import { Button } from "../components/ui/button";
 import { Separator } from "../components/ui/separator";
 
 import { DONATION_LEVELS, type CommunityPost, type DonationLevel } from "../utils/community";
-import { getUserByUid } from "../utils/auth";
+import { getUserByUid, type User } from "../utils/auth";
 import { getUserPostsByUid } from "../utils/community";
-import type { User } from "../utils/auth";
+
+// 🔽 댓글 수 계산용 Firestore import 추가
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 // ---------- Util ----------
 function toIso(v: any): string | null {
@@ -57,26 +59,49 @@ function StatBox({ icon, label, value }: { icon: ReactNode; label: string; value
   );
 }
 
-type Props = { userUid: string; onBack: () => void; };
+type Props = { userUid: string; onBack: () => void };
+
+// 🔽 댓글 수 포함된 타입
+type PostWithStats = CommunityPost & { commentsCount: number };
 
 export default function UserProfilePage({ userUid, onBack }: Props) {
   const [user, setUser] = useState<User | null>(null);
-  const [userPosts, setUserPosts] = useState<CommunityPost[]>([]);
+  const [userPosts, setUserPosts] = useState<PostWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 🔽 전체 댓글 수
+  const totalComments = userPosts.reduce((sum, p) => sum + (p.commentsCount ?? 0), 0);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true); setError(null);
+      setLoading(true);
+      setError(null);
       try {
+        // 1) 유저 정보 + 게시글 목록
         const [u, posts] = await Promise.all([
           getUserByUid(userUid),
           getUserPostsByUid(userUid),
         ]);
+
         if (!alive) return;
+
+        // 2) 각 게시글의 댓글 개수 조회
+        const postsWithCounts: PostWithStats[] = await Promise.all(
+          posts.map(async (p) => {
+            const commentsSnap = await getDocs(
+              collection(db, "posts", p.id, "comments")
+            );
+            return {
+              ...p,
+              commentsCount: commentsSnap.size,
+            };
+          })
+        );
+
         setUser(u);
-        setUserPosts(posts);
+        setUserPosts(postsWithCounts);
       } catch (e: any) {
         console.error(e);
         if (alive) setError(e?.message ?? "로드 실패");
@@ -84,7 +109,9 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [userUid]);
 
   if (loading) {
@@ -113,17 +140,21 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
       </div>
     );
   }
-  
+
   // 통계 계산
   const totalDonation = user.totalDonation || 0;
   const userLevel =
-    DONATION_LEVELS.find(l => totalDonation >= l.minAmount && totalDonation <= l.maxAmount)
-    || DONATION_LEVELS[0];
+    DONATION_LEVELS.find(
+      (l) => totalDonation >= l.minAmount && totalDonation <= l.maxAmount
+    ) || DONATION_LEVELS[0];
 
   const totalPosts = userPosts.length;
   const totalLikes = userPosts.reduce((s, p) => s + (p.likes || 0), 0);
   const join = user.createdAt ? new Date(user.createdAt) : new Date();
-  const daysActive = Math.max(1, Math.floor((Date.now() - join.getTime()) / (1000 * 60 * 60 * 24)));
+  const daysActive = Math.max(
+    1,
+    Math.floor((Date.now() - join.getTime()) / (1000 * 60 * 60 * 24))
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 py-8">
@@ -138,7 +169,7 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
                   {userLevel.badgeEmoji}
                 </div>
               </div>
-              
+
               {/* User Info */}
               <div className="flex-1 text-center md:text-left">
                 <div className="flex flex-col md:flex-row items-center md:items-center gap-3 mb-3">
@@ -158,7 +189,9 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
                       <Heart className="w-4 h-4" />
                       <span className="text-sm text-emerald-100">누적 기부금</span>
                     </div>
-                    <div className="text-2xl text-center">₩{totalDonation.toLocaleString()}</div>
+                    <div className="text-2xl text-center">
+                      ₩{totalDonation.toLocaleString()}
+                    </div>
                   </div>
 
                   <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
@@ -198,28 +231,38 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
               {DONATION_LEVELS.map((level, index) => {
                 const isCurrentLevel = level.id === userLevel.id;
                 const isPassed = totalDonation >= level.minAmount;
-                
+
                 return (
                   <div key={level.id} className="flex-1">
                     <div className="flex items-center">
                       {index > 0 && (
-                        <div className={`flex-1 h-1 ${isPassed ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                        <div
+                          className={`flex-1 h-1 ${
+                            isPassed ? "bg-emerald-500" : "bg-gray-200"
+                          }`}
+                        />
                       )}
                       <div
-                        className={`flex flex-col items-center ${index > 0 ? 'ml-2' : ''}`}
+                        className={`flex flex-col items-center ${
+                          index > 0 ? "ml-2" : ""
+                        }`}
                       >
                         <div
                           className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-all ${
                             isCurrentLevel
-                              ? 'bg-emerald-500 ring-4 ring-emerald-200 scale-110'
+                              ? "bg-emerald-500 ring-4 ring-emerald-200 scale-110"
                               : isPassed
-                              ? 'bg-emerald-100'
-                              : 'bg-gray-100'
+                              ? "bg-emerald-100"
+                              : "bg-gray-100"
                           }`}
                         >
                           {level.badgeEmoji}
                         </div>
-                        <span className={`text-xs mt-2 ${isCurrentLevel ? 'text-emerald-700' : 'text-gray-500'}`}>
+                        <span
+                          className={`text-xs mt-2 ${
+                            isCurrentLevel ? "text-emerald-700" : "text-gray-500"
+                          }`}
+                        >
                           {level.name}
                         </span>
                       </div>
@@ -228,7 +271,7 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
                 );
               })}
             </div>
-            
+
             {userLevel.maxAmount !== Infinity && (
               <div className="mt-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -246,7 +289,7 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
                         ((totalDonation - userLevel.minAmount) /
                           (userLevel.maxAmount - userLevel.minAmount)) *
                           100
-                      )}%`
+                      )}%`,
                     }}
                   />
                 </div>
@@ -274,11 +317,11 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
               <div className="space-y-4">
                 {userPosts.map((post, index) => {
                   const postLevel = getLevelById(post.levelId);
-                  
+
                   return (
                     <div key={post.id}>
                       {index > 0 && <Separator className="my-4" />}
-                      
+
                       <div className="hover:bg-gray-50 p-4 rounded-lg transition-colors">
                         {/* Post Header */}
                         <div className="flex items-center gap-3 mb-3">
@@ -304,12 +347,16 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
                         {/* Post Stats */}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
-                            <Heart className={`w-4 h-4 ${post.likes > 0 ? 'text-red-500' : ''}`} />
+                            <Heart
+                              className={`w-4 h-4 ${
+                                post.likes > 0 ? "text-red-500" : ""
+                              }`}
+                            />
                             <span>{post.likes}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <MessageCircle className="w-4 h-4" />
-                            <span>{0}</span>
+                            <span>{post.commentsCount}</span>
                           </div>
                         </div>
                       </div>
@@ -331,7 +378,7 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
                 <div className="text-sm text-gray-600">작성한 글</div>
               </div>
               <div>
-                <div className="text-3xl text-emerald-600 mb-1">{0}</div>
+                <div className="text-3xl text-emerald-600 mb-1">{totalComments}</div>
                 <div className="text-sm text-gray-600">받은 댓글</div>
               </div>
               <div>
@@ -341,7 +388,11 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
             </div>
             <Separator className="my-4" />
             <p className="text-center text-sm text-gray-600">
-              {user.name}님은 <strong className="text-emerald-700">{totalDonation.toLocaleString()}원</strong>의 기부금으로
+              {user.name}님은{" "}
+              <strong className="text-emerald-700">
+                {totalDonation.toLocaleString()}원
+              </strong>
+              의 기부금으로
               <br />
               다른 환우들에게 희망을 전하고 있습니다 ✨
             </p>

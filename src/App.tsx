@@ -1,144 +1,299 @@
-import { BrowserRouter, Routes, Route, useNavigate, Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import { logout } from './utils/auth';
+import { useState, useEffect } from "react";
+import { Toaster } from "./components/ui/sonner";
+import { Page } from "./types/navigation";
+import { BrowserRouter, Routes, Route, useParams, useNavigate, useLocation } from "react-router-dom";
+
+import {
+  onAuthChange,
+  type User, // Firebase User (profile 포함 버전)
+} from "./utils/auth";
+
 import LandingPage from "./components/LandingPage";
 import LoginPage from "./components/LoginPage";
 import SignupPage from "./components/SignupPage";
+import ProfileSetupPage from "./components/ProfileSetupPage";
 import Dashboard from "./components/Dashboard";
 import HealthReport from "./components/HealthReport";
 import MyPage from "./components/MyPage";
+import UserProfilePage from "./components/UserProfilePage";
 import AboutPage from "./components/AboutPage";
 import PartnershipPage from "./components/PartnershipPage";
 import PrivacyPage from "./components/PrivacyPage";
 import TermsPage from "./components/TermsPage";
 import CommunityPage from "./components/CommunityPage";
-import UserProfilePage from "./components/UserProfilePage";
-import ScrollToTop from "./components/ScrollToTop";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 
-type Page = 'landing' | 'login' | 'signup' | 'dashboard' | 'report' | 'mypage' | 'community' | 'about' | 'partnership' | 'privacy' | 'terms';
+// 경로 → Page 타입 매핑
+const pathToPage = (pathname: string): Page => {
+  switch (pathname) {
+    case "/":
+      return "landing";
+    case "/login":
+      return "login";
+    case "/signup":
+      return "signup";
+    case "/profile-setup":
+      return "profile-setup";
+    case "/dashboard":
+      return "dashboard";
+    case "/report":
+      return "report";
+    case "/mypage":
+      return "mypage";
+    case "/community":
+      return "community";
+    case "/about":
+      return "about";
+    case "/partnership":
+      return "partnership";
+    case "/privacy":
+      return "privacy";
+    case "/terms":
+      return "terms";
+    default:
+      return "landing";
+  }
+};
 
+// Page 타입 → 경로 매핑
+const pageToPath = (page: Page): string => {
+  switch (page) {
+    case "landing":
+      return "/";
+    case "login":
+      return "/login";
+    case "signup":
+      return "/signup";
+    case "profile-setup":
+      return "/profile-setup";
+    case "dashboard":
+      return "/dashboard";
+    case "report":
+      return "/report";
+    case "mypage":
+      return "/mypage";
+    case "community":
+      return "/community";
+    case "about":
+      return "/about";
+    case "partnership":
+      return "/partnership";
+    case "privacy":
+      return "/privacy";
+    case "terms":
+      return "/terms";
+  }
+};
 
-/**
- * 1. '보호된 레이아웃' (로그인 사용자 전용)
- * - Navigation, Footer를 포함하고, 로그아웃 시 /login으로 보냄
- */
-function ProtectedLayout() {
-  const { user, loading } = useAuth(); // 전역 바구니에서 유저 정보 확인
-  const location = useLocation(); // 현재 URL 위치
+// URL의 :uid 값을 꺼내서 UserProfilePage에 넘겨주는 래퍼
+function UserProfileRoute() {
+  const { uid } = useParams<{ uid: string }>();
+  const navigate = useNavigate();
 
-  // 1A. 로딩 중 (Firebase Auth가 로그인 상태 확인 중)
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
+  if (!uid) {
+    return <div>잘못된 접근입니다.</div>;
   }
 
-  // 1B. 로그아웃 상태
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  return <UserProfilePage userUid={uid} onBack={() => navigate(-1)} />;
+}
+
+export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentPage = pathToPage(location.pathname);
+
+  const handleNavigate = (page: Page) => {
+    navigate(pageToPath(page));
+  };
+
+  // Firebase Auth 상태 구독
+  useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      setCurrentUser(user);
+      setAuthReady(true);
+    });
+    return unsubscribe;
+  }, []);
+
+  // 로그인/로그아웃 + 프로필 완료 여부에 따른 페이지 강제 이동 로직
+  useEffect(() => {
+    if (!authReady) return;
+
+    const publicPaths = [
+      "/",
+      "/login",
+      "/signup",
+      "/about",
+      "/partnership",
+      "/privacy",
+      "/terms",
+    ];
+
+    const path = location.pathname;
+
+    // 1) 로그아웃 상태
+    if (!currentUser) {
+      if (!publicPaths.includes(path)) {
+        navigate("/");
+      }
+      return;
+    }
+
+    // 2) 로그인 상태
+    const profileCompleted = !!currentUser.profile?.completedAt;
+
+    // 프로필 미완료인데 profile-setup이 아니면 profile-setup으로 이동
+    if (!profileCompleted && path !== "/profile-setup") {
+      navigate("/profile-setup");
+      return;
+    }
+
+    // 프로필 완료인데 여전히 landing/login/signup/profile-setup이면 dashboard로 이동
+    if (
+      profileCompleted &&
+      (path === "/" ||
+        path === "/login" ||
+        path === "/signup" ||
+        path === "/profile-setup")
+    ) {
+      navigate("/dashboard");
+    }
+  }, [authReady, currentUser, location.pathname, navigate]);
+
+  const handleLoginSuccess = () => {
+    navigate("/dashboard");
+  };
+
+  const handleSignupSuccess = () => {
+    navigate("/login");
+  };
+
+  // authReady 전에 잠깐 로딩 화면
+  if (!authReady) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <span className="text-gray-500 text-sm">Loading...</span>
+        </div>
+        <Toaster />
+      </>
+    );
   }
 
-  // 1C. 로그인 상태 (성공!)
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation 
-        userEmail={user.email} // 유저 이메일 전달
-      />
-      
-      <Outlet /> 
-      
-      <Footer />
-    </div>
-  );
-}
-
-/**
- * 2. '공개 전용 레이아웃' (로그아웃 사용자 전용)
- * - 이미 로그인했다면 /dashboard로 보냄
- */
-function PublicOnlyLayout() {
-    const { user, loading } = useAuth();
-
-    if (loading) {
-      return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
-    }
-
-    if (user) {
-      return <Navigate to="/dashboard" replace />;
-    }
-
-    return <Outlet />;
-}
-
-
-/**
- * 3. 메인 App 컴포넌트 (라우터 설정)
- */
-export default function App() {
-  const navigate = useNavigate(); // react-router-dom의 페이지 이동 기능
-  const handleLoginSuccess = () => navigate('/dashboard');
-  const handleSignupSuccess = () => navigate('/dashboard');
-  const handleGoToLogin = () => navigate('/login');
-  const handleGoToSignup = () => navigate('/signup');
-  const handleGoToLanding = () => navigate('/');
-  
-  return (
-    <>
-      <ScrollToTop />
-      <Routes>
-        <Route 
-          path="/" 
-          element={<LandingPage 
-            onNavigateToLogin={handleGoToLogin}
-          />} 
+      {/* 로그인 상태에서만 상단 네비게이션 표시 (필요에 따라 조정 가능) */}
+      {currentUser && (
+        <Navigation
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          userEmail={currentUser.email}
         />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/partnership" element={<PartnershipPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
+      )}
 
-        <Route element={<PublicOnlyLayout />}>
-          <Route 
-            path="/login" 
-            element={<LoginPage 
+      <Routes>
+        {/* 랜딩 페이지 */}
+        <Route
+          path="/"
+          element={
+            <LandingPage
+              onNavigateToLogin={() => handleNavigate("login")}
+              onNavigateToSignup={() => handleNavigate("signup")}
+              onNavigate={handleNavigate}
+            />
+          }
+        />
+
+        {/* 로그인 / 회원가입 */}
+        <Route
+          path="/login"
+          element={
+            <LoginPage
               onLoginSuccess={handleLoginSuccess}
-              onNavigateToSignup={handleGoToSignup}
-              onBackToLanding={handleGoToLanding}
-            />} 
-          />
-          <Route 
-            path="/signup" 
-            element={<SignupPage 
+              onNavigateToSignup={() => handleNavigate("signup")}
+              onBackToLanding={() => handleNavigate("landing")}
+            />
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <SignupPage
               onSignupSuccess={handleSignupSuccess}
-              onNavigateToLogin={handleGoToLogin}
-              onBackToLanding={handleGoToLanding}
-            />} 
-          />
-        </Route>
-        
-        <Route element={<ProtectedLayout />}>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="report" element={<HealthReport />} />
-          <Route path="mypage" element={<MyPage />} />
-          <Route path="community" element={<CommunityPage />} />
-          <Route path="user" element={<Navigate to="/community" replace />} />
-          <Route path="user/:uid" element={<UserProfileRoute />} />
-        </Route>
+              onNavigateToLogin={() => handleNavigate("login")}
+              onBackToLanding={() => handleNavigate("landing")}
+            />
+          }
+        />
 
+        {/* 프로필 설정 */}
+        <Route
+          path="/profile-setup"
+          element={
+            <ProfileSetupPage
+              onComplete={() => handleNavigate("dashboard")}
+              onSkip={() => handleNavigate("dashboard")}
+            />
+          }
+        />
+
+        {/* 정보 페이지 (로그인 불필요) */}
+        <Route
+          path="/about"
+          element={
+            <AboutPage onNavigateBack={() => handleNavigate("landing")} />
+          }
+        />
+        <Route
+          path="/partnership"
+          element={
+            <PartnershipPage onNavigateBack={() => handleNavigate("landing")} />
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <PrivacyPage onNavigateBack={() => handleNavigate("landing")} />
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <TermsPage onNavigateBack={() => handleNavigate("landing")} />
+          }
+        />
+
+        {/* 보호된 페이지들 (auth useEffect에서 알아서 리다이렉트) */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/report" element={<HealthReport />} />
+        <Route path="/mypage" element={<MyPage />} />
+        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/user/:uid" element={<UserProfileRoute />} />
+
+        {/* 없는 경로는 랜딩으로 */}
+        <Route
+          path="*"
+          element={
+            <LandingPage
+              onNavigateToLogin={() => handleNavigate("login")}
+              onNavigateToSignup={() => handleNavigate("signup")}
+              onNavigate={handleNavigate}
+            />
+          }
+        />
       </Routes>
-    </>
-  );
-}
 
-function UserProfileRoute() {
-  const { uid } = useParams(); //  /user/:uid
-  const navigate = useNavigate(); 
+      {/* 대시보드/리포트/마이페이지/커뮤니티에서만 푸터 보여주기 */}
+      {["dashboard", "report", "mypage", "community"].includes(
+        currentPage,
+      ) && <Footer onNavigate={handleNavigate} />}
 
-  if (!uid) return <Navigate to="/community" replace />;
-  return (
-    <UserProfilePage
-      userUid={uid}
-      onBack={() => navigate('/community')} // "커뮤니티로 돌아가기" 버튼 동작
-    />
+      <Toaster />
+    </div>
   );
 }

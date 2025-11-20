@@ -25,6 +25,30 @@ import {
 } from "firebase/firestore";
 import { toast } from "sonner";
 
+export interface UserProfile {
+  birthYear?: number;
+  age?: number;
+  gender?: string;
+  height?: number;
+  weight?: number;
+
+  // 질환 / 혈당 / 혈압
+  conditions?: string[];              // ["diabetes", "hypertension", ...]
+  diabetesType?: string;              // "type1" | "type2" 등
+  diagnosisPeriod?: string;           // "under1year" | "1to5years" | ...
+  medicationType?: string;           // "oral" | "insulin" 등
+  hba1c?: number;
+  systolicBP?: number;
+  diastolicBP?: number;
+
+  // 생활 습관
+  alcoholFrequency?: string;         // "none" | "1to2" | ...
+  smokingStatus?: string;            // "never" | "past" | "current"
+  exerciseFrequency?: string;        // "none" | "1to2" | ...
+
+  completedAt?: string;              // ISO string
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -33,16 +57,17 @@ export interface User {
   createdAt: string; // ISO string
   lastRecordDate: string | null;
   badges: string[];
+  profile?: UserProfile;             // 🔹 프로필 필드 추가
 }
 
 export interface HealthLog {
   id: string; // Firestore 문서 ID
   userId: string; // User의 uid
   type: "blood_sugar" | "blood_pressure";
-  value?: number; // 혈당 수치
-  systolic?: number; // 수축기 혈압
-  diastolic?: number; // 이완기 혈압
-  recordedAt: string; // new Date().toISOString()
+  value?: number;
+  systolic?: number;
+  diastolic?: number;
+  recordedAt: string;
 }
 
 // --- 2. 인증 함수 (Firebase Auth) ---
@@ -193,6 +218,42 @@ export async function updateCurrentUserProfile(
   } catch (error) {
     toast.error("프로필 업데이트 중 오류가 발생했습니다.");
     console.error("Update Profile Error: ", error);
+    return false;
+  }
+}
+
+/**
+ * 상세 건강 프로필 업데이트 (ProfileSetupPage에서 사용)
+ * users/{uid} 문서의 profile 필드를 통째로 교체
+ */
+export async function updateUserProfile(
+  profile: UserProfile
+): Promise<boolean> {
+  const authUser = auth.currentUser;
+  if (!authUser) {
+    toast.error("로그인이 필요합니다.");
+    return false;
+  }
+
+  const userDocRef = doc(db, "users", authUser.uid);
+
+  // 🔹 1) undefined 값 제거
+  const cleanedProfile: Record<string, any> = {};
+  Object.entries(profile).forEach(([key, value]) => {
+    if (value !== undefined) {
+      cleanedProfile[key] = value;
+    }
+  });
+
+  try {
+    await updateDoc(userDocRef, {
+      profile: cleanedProfile,
+      // 필요하면 updatedAt: serverTimestamp() 도 추가 가능
+    });
+    return true;
+  } catch (error) {
+    console.error("Update User Profile Error: ", error);
+    toast.error("프로필 업데이트 중 오류가 발생했습니다.");
     return false;
   }
 }
