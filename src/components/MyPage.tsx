@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Award, Heart, TrendingUp, Eye, EyeOff, Sparkles } from "lucide-react";
+import { User } from "lucide-react";
 
 import {
   Card,
@@ -114,8 +115,12 @@ export default function MyPage() {
       {/* 상단 헤더 */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <h1 className="text-3xl mb-2 font-bold">마이페이지</h1>
-          <p className="text-emerald-100">나의 건강 여정과 기부 현황</p>
+          <div className="flex items-center gap-2">
+            <User className="w-8 h-8 text-white" />
+            <h1 className="text-3xl font-bold">마이페이지</h1>
+          </div>
+
+          <p className="text-emerald-100 mt-1">나의 건강 여정과 기부 현황</p>
         </div>
       </div>
 
