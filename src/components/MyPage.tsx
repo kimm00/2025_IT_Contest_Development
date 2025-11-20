@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
-import { Award, Heart, TrendingUp, Eye, EyeOff, Sparkles } from "lucide-react";
-import { User } from "lucide-react";
+import {
+  Award,
+  Heart,
+  TrendingUp,
+  Eye,
+  EyeOff,
+  Sparkles,
+  User as UserIcon,
+} from "lucide-react";
 
 import {
   Card,
@@ -37,10 +44,40 @@ export default function MyPage() {
   const [profile, setProfile] = useState<any>(null);
   const [healthLogs, setHealthLogs] = useState<any[]>([]);
 
-  const [apiKey, setApiKey] = useState(getOpenAIKey() || "");
   const [showApiKey, setShowApiKey] = useState(false);
   const [isEditingApiKey, setIsEditingApiKey] = useState(!hasOpenAIKey());
   const [loading, setLoading] = useState(true);
+
+  const [savedKey, setSavedKey] = useState(getOpenAIKey() || "");
+  const [tempKey, setTempKey] = useState(savedKey);
+
+  // 저장
+  const handleSaveApiKey = () => {
+    if (tempKey.trim().length === 0) {
+      toast.error("API 키를 입력해주세요.");
+      return;
+    }
+
+    saveOpenAIKey(tempKey);
+    setSavedKey(tempKey);
+    // setIsEditingApiKey(false);
+    toast.success("API 키가 저장되었습니다.");
+  };
+
+  // 취소
+  const handleCancelEdit = () => {
+    setTempKey(savedKey); // 원래 값으로 복귀
+    setIsEditingApiKey(false);
+  };
+
+  // 삭제
+  const handleRemoveApiKey = () => {
+    removeOpenAIKey();
+    setSavedKey("");
+    setTempKey("");
+    toast.success("API 키가 삭제되었습니다.");
+    setIsEditingApiKey(false);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthChange(async (currentUser) => {
@@ -75,23 +112,6 @@ export default function MyPage() {
     return new Date(profile.createdAt).toLocaleDateString("ko-KR");
   };
 
-  const handleSaveApiKey = () => {
-    if (apiKey.trim().length === 0) {
-      toast.error("API 키를 입력해주세요.");
-      return;
-    }
-    saveOpenAIKey(apiKey);
-    toast.success("API 키가 저장되었습니다.");
-    setIsEditingApiKey(false);
-  };
-
-  const handleRemoveApiKey = () => {
-    removeOpenAIKey();
-    setApiKey("");
-    setIsEditingApiKey(true);
-    toast.success("API 키가 삭제되었습니다.");
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center text-xl">
@@ -116,7 +136,7 @@ export default function MyPage() {
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <User className="w-8 h-8 text-white" />
+            <UserIcon className="w-8 h-8 text-white" />
             <h1 className="text-3xl font-bold">마이페이지</h1>
           </div>
 
@@ -296,37 +316,42 @@ export default function MyPage() {
                 {/* API 입력 */}
                 {isEditingApiKey ? (
                   <>
-                    <div className="relative">
+                    {/* 입력창 */}
+                    <div className="flex items-center gap-2">
                       <Input
                         type={showApiKey ? "text" : "password"}
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
+                        value={tempKey}
+                        onChange={(e) => {
+                          setTempKey(e.target.value);
+                          setIsEditingApiKey(true);
+                        }}
                         placeholder="sk-..."
                       />
+
                       <Button
-                        variant="ghost"
-                        className="absolute right-0 top-0 h-full px-3"
+                        variant="outline"
                         onClick={() => setShowApiKey(!showApiKey)}
+                        className="px-3"
                       >
                         {showApiKey ? <EyeOff /> : <Eye />}
                       </Button>
                     </div>
 
-                    <div className="flex gap-2">
+                    {/* 저장 + 취소 버튼 */}
+                    <div className="flex gap-2 mt-3">
                       <Button
                         onClick={handleSaveApiKey}
                         className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                       >
                         저장
                       </Button>
-                      {hasOpenAIKey() && (
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsEditingApiKey(false)}
-                        >
-                          취소
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                        className="flex-1"
+                      >
+                        취소
+                      </Button>
                     </div>
                   </>
                 ) : (
