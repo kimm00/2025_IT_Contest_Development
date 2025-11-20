@@ -239,6 +239,24 @@ export default function MyPage() {
               </CardContent>
             </Card>
 
+            {/* API 키 발급 안내 */}
+            <div className="mt-4 text-xs text-gray-600 leading-relaxed bg-gray-100 p-3 rounded-lg">
+              <strong>🔑 OpenAI API 키가 필요합니다.</strong>
+              <br />
+              AI 건강 분석 기능을 사용하려면 OpenAI API 키를 등록해야 합니다.
+              <br />
+              <a
+                href="https://platform.openai.com/account/api-keys"
+                target="_blank"
+                className="text-blue-700 font-semibold underline text-sm md:text-base hover:text-blue-800 transition-colors"
+              >
+                👉 API 키 발급받기 (OpenAI 공식 사이트)
+              </a>
+              <br />
+              분석 1회 비용은 약 <strong>$0.03 ~ $0.08</strong> 정도로 매우
+              저렴합니다.
+            </div>
+
             {/* AI 건강 분석 */}
             <Card className="p-6 border-2 border-purple-200 bg-purple-50/40">
               <CardHeader>

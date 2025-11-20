@@ -219,22 +219,49 @@ function WeeklyAIReportInner({
   };
 
   /* ------------------- 상태별 UI ------------------- */
-
   if (!hasApiKey) {
     return (
-      <>
-        <SectionHeader
-          icon={<Sparkles />}
-          title="AI 주간 건강 리포트"
-          subtitle="OpenAI API 필요"
-        />
-        <Alert className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            마이페이지에서 API 키를 설정해주세요.
-          </AlertDescription>
-        </Alert>
-      </>
+      <div className="p-6 rounded-xl border border-purple-200 bg-purple-50/40">
+        <div className="flex items-center gap-3 mb-3">
+          <Sparkles className="w-6 h-6 text-purple-600" />
+          <h3 className="text-lg font-semibold">AI 주간 건강 리포트</h3>
+        </div>
+
+        <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+          GPT 기반 AI 분석을 사용하려면 OpenAI API 키가 필요합니다.
+        </p>
+
+        <div className="text-sm text-gray-600 bg-white/80 p-3 rounded-lg border border-purple-100 mb-4">
+          <p className="font-medium text-gray-700">
+            발급 비용은{" "}
+            <span className="text-purple-600 font-bold">
+              약 0.05 ~ 0.07달러
+            </span>
+            정도로 매우 저렴해요!
+          </p>
+          <p className="text-gray-500 mt-1">
+            (한 달 동안 여러 번 분석해도 100원도 안 나와요 🥹)
+          </p>
+        </div>
+
+        <a
+          href="https://platform.openai.com/settings/organization/api-keys"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-purple-700 underline font-medium hover:text-purple-900"
+        >
+          👉 OpenAI API 키 발급받기 (공식 사이트)
+        </a>
+
+        <div className="mt-5">
+          <Button
+            onClick={() => setIsExpanded(true)}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            API 키 입력하러 가기
+          </Button>
+        </div>
+      </div>
     );
   }
 
