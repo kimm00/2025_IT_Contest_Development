@@ -206,67 +206,73 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {/* 혈당 */}
           <Card className="hover:shadow-lg">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <Droplet className="w-6 h-6 text-red-600" />
-                  </div>
-                  <div>
-                    <CardTitle>혈당 기록</CardTitle>
-                    <CardDescription>Blood Sugar</CardDescription>
-                  </div>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <Droplet className="w-6 h-6 text-red-600" />
                 </div>
-                <Button
-                  size="icon"
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  onClick={() => {
-                    setRecordType("blood_sugar");
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
+                <div>
+                  <CardTitle>혈당 기록</CardTitle>
+                  <CardDescription>Blood Sugar Level</CardDescription>
+                </div>
               </div>
+
+              <Button
+                size="icon"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  setRecordType("blood_sugar");
+                  setIsModalOpen(true);
+                }}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
             </CardHeader>
 
             <CardContent>
-              <div className="text-2xl mb-2">
+              <div className="text-3xl font-semibold mb-3">
                 {getLatestReading("blood_sugar") || "데이터 없음"}
               </div>
+
+              <p className="text-sm text-gray-600">
+                최근 측정: {new Date().toLocaleDateString("ko-KR")}
+              </p>
             </CardContent>
           </Card>
 
           {/* 혈압 */}
           <Card className="hover:shadow-lg">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Activity className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle>혈압 기록</CardTitle>
-                    <CardDescription>Blood Pressure</CardDescription>
-                  </div>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-blue-600" />
                 </div>
-                <Button
-                  size="icon"
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  onClick={() => {
-                    setRecordType("blood_pressure");
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
+                <div>
+                  <CardTitle>혈압 기록</CardTitle>
+                  <CardDescription>Blood Pressure</CardDescription>
+                </div>
               </div>
+
+              <Button
+                size="icon"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  setRecordType("blood_pressure");
+                  setIsModalOpen(true);
+                }}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
             </CardHeader>
 
             <CardContent>
-              <div className="text-2xl mb-2">
+              <div className="text-3xl font-semibold mb-3">
                 {getLatestReading("blood_pressure") || "데이터 없음"}
               </div>
+
+              <p className="text-sm text-gray-600">
+                최근 측정: {new Date().toLocaleDateString("ko-KR")}
+              </p>
             </CardContent>
           </Card>
         </div>
