@@ -45,7 +45,7 @@ export default function MyPage() {
   const [healthLogs, setHealthLogs] = useState<any[]>([]);
 
   const [showApiKey, setShowApiKey] = useState(false);
-  const [isEditingApiKey, setIsEditingApiKey] = useState(!hasOpenAIKey());
+  const [isEditingApiKey, setIsEditingApiKey] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [savedKey, setSavedKey] = useState(getOpenAIKey() || "");
@@ -60,7 +60,7 @@ export default function MyPage() {
 
     saveOpenAIKey(tempKey);
     setSavedKey(tempKey);
-    // setIsEditingApiKey(false);
+    setIsEditingApiKey(false);
     toast.success("API 키가 저장되었습니다.");
   };
 
@@ -316,39 +316,46 @@ export default function MyPage() {
                 {/* API 입력 */}
                 {isEditingApiKey ? (
                   <>
-                    {/* 입력창 */}
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type={showApiKey ? "text" : "password"}
-                        value={tempKey}
-                        onChange={(e) => {
-                          setTempKey(e.target.value);
-                          setIsEditingApiKey(true);
-                        }}
-                        placeholder="sk-..."
-                      />
+                    {/* 입력 + 눈 버튼 */}
+                    <div className="flex items-center gap-2 w-full">
+                      <div className="flex-1">
+                        <Input
+                          type={showApiKey ? "text" : "password"}
+                          value={tempKey}
+                          onChange={(e) => setTempKey(e.target.value)}
+                          placeholder="sk-..."
+                        />
+                      </div>
 
                       <Button
+                        type="button"
                         variant="outline"
                         onClick={() => setShowApiKey(!showApiKey)}
-                        className="px-3"
+                        className="px-3 shrink-0"
                       >
                         {showApiKey ? <EyeOff /> : <Eye />}
                       </Button>
                     </div>
 
-                    {/* 저장 + 취소 버튼 */}
-                    <div className="flex gap-2 mt-3">
+                    {/* 저장 + 취소 */}
+                    <div className="flex justify-end gap-2 mt-4">
                       <Button
+                        variant="outline"
                         onClick={handleSaveApiKey}
-                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                        className="px-3 py-3 font-semibold"
                       >
                         저장
                       </Button>
                       <Button
                         variant="outline"
                         onClick={handleCancelEdit}
-                        className="flex-1"
+                        className="
+                          px-3 py-3
+                          border-red-500
+                          text-red-600
+                          hover:bg-red-50
+                          hover:text-red-700
+                        "
                       >
                         취소
                       </Button>
