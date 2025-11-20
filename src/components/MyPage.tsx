@@ -172,53 +172,69 @@ export default function MyPage() {
             </Card>
 
             {/* 기부 임팩트 */}
-            <Card>
+            <Card className="border rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Heart className="w-5 h-5 text-emerald-600" />
                   기부 임팩트
                 </CardTitle>
-                <CardDescription>나의 건강 습관이 만드는 변화</CardDescription>
+                <CardDescription className="text-gray-600">
+                  나의 건강 습관이 만드는 변화
+                </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-5">
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">총 기부금</p>
-                    <p className="text-3xl text-emerald-700 font-bold">
-                      ₩{profile.totalDonation.toLocaleString()}
+              <CardContent className="space-y-6">
+                {/* 상단 그라데이션 박스 */}
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 rounded-xl border border-emerald-100">
+                  {/* 총 기부금 + 하트 아이콘 */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <p className="text-sm text-gray-600">총 기부금</p>
+                      <p className="text-4xl font-semibold text-emerald-700">
+                        ₩{profile.totalDonation.toLocaleString()}
+                      </p>
+                    </div>
+
+                    <Heart className="w-12 h-12 text-emerald-600 stroke-[1.5]" />
+                  </div>
+
+                  {/* 다음 뱃지까지 */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <span>다음 뱃지까지</span>
+                      <span className="text-emerald-700 font-medium">
+                        {profile.totalDonation >= 10000
+                          ? "달성! 🎉"
+                          : `₩${(
+                              10000 - profile.totalDonation
+                            ).toLocaleString()} 남음`}
+                      </span>
+                    </div>
+
+                    {/* 프로그레스 바 */}
+                    <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(
+                            (profile.totalDonation / 10000) * 100,
+                            100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 정보 문구 */}
+                  <div className="pt-4 border-t border-emerald-200">
+                    <p className="text-sm text-gray-800 mb-1 font-medium">
+                      💡 알고 계셨나요?
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      나의 기부금으로 다른 환우분들이 건강 관리에 필요한 혈당
+                      측정기, 혈압계 등을 지원받을 수 있습니다.
                     </p>
                   </div>
-
-                  {/* 진행 바 */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-emerald-600 h-2 rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(
-                          (profile.totalDonation / 10000) * 100,
-                          100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-
-                  <p className="text-sm text-gray-600">
-                    다음 뱃지까지{" "}
-                    {profile.totalDonation >= 10000
-                      ? "달성!"
-                      : `₩${(
-                          10000 - profile.totalDonation
-                        ).toLocaleString()} 남음`}
-                  </p>
-
-                  <p className="text-sm text-gray-700 mt-4 flex items-center gap-1">
-                    💡 <span>알고 계셨나요?</span>
-                  </p>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    나의 기부금으로 다른 환우분들이 혈당 측정기, 혈압계 등 건강
-                    관리에 필요한 기기를 지원받을 수 있습니다.
-                  </p>
                 </div>
               </CardContent>
             </Card>
