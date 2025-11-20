@@ -129,8 +129,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* 헤더 */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-12">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <div
+        className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white  py-8 lg:py-12 
+    min-h-[220px]"
+      >
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
           <h1 className="text-3xl mb-8">
             안녕하세요, {user.email.split("@")[0]}님! 👋
           </h1>
@@ -138,38 +141,59 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 누적 기부금 */}
             <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
-              <CardHeader>
+              <CardHeader className="pb-4">
                 <CardDescription className="text-white/80">
                   누적 기부금
                 </CardDescription>
-                <CardTitle className="text-3xl">
+                <CardTitle className="text-4xl font-bold">
                   ₩{user.totalDonation.toLocaleString()}
                 </CardTitle>
               </CardHeader>
+
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <Heart className="w-4 h-4" />
+                  <span>매일 기록으로 생명을 살립니다</span>
+                </div>
+              </CardContent>
             </Card>
 
             {/* 오늘 기록 */}
             <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
-              <CardHeader>
+              <CardHeader className="pb-4">
                 <CardDescription className="text-white/80">
                   오늘 기록
                 </CardDescription>
-                <CardTitle className="text-3xl">
+                <CardTitle className="text-4xl font-bold">
                   {getTodayRecordCount()}회
                 </CardTitle>
               </CardHeader>
+
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <Activity className="w-4 h-4" />
+                  <span>꾸준한 기록이 습관을 만듭니다</span>
+                </div>
+              </CardContent>
             </Card>
 
             {/* 전체 기록 */}
             <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
-              <CardHeader>
+              <CardHeader className="pb-4">
                 <CardDescription className="text-white/80">
                   전체 기록
                 </CardDescription>
-                <CardTitle className="text-3xl">
+                <CardTitle className="text-4xl font-bold">
                   {healthLogs.length}회
                 </CardTitle>
               </CardHeader>
+
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>계속 성장 중입니다</span>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
