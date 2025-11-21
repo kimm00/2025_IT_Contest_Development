@@ -1,3 +1,4 @@
+// Dashboard.tsx
 import { useState, useEffect } from "react";
 import { Activity, Droplet, Heart, Plus, TrendingUp } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
@@ -30,19 +31,19 @@ import {
 } from "../utils/badges";
 
 export default function Dashboard() {
-  // Firebase user 객체
   const [user, setUser] = useState<User | null>(null);
-
-  // 건강 기록
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
 
-  // 모달
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recordType, setRecordType] = useState<
     "blood_sugar" | "blood_pressure"
   >("blood_sugar");
 
-  // 새로운 뱃지
+  const openModal = (type: "blood_sugar" | "blood_pressure") => {
+    setRecordType(type);
+    setIsModalOpen(true);
+  };
+
   const [newBadges, setNewBadges] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,12 +58,10 @@ export default function Dashboard() {
 
       setUser(currentUser);
 
-      // 건강 기록 가져오기
       const logs = await getUserHealthLogs();
       setHealthLogs(logs);
 
-      // 뱃지 체크
-      awardBadges(currentUser, logs);
+      await awardBadges(currentUser, logs);
 
       setLoading(false);
     });
@@ -74,6 +73,7 @@ export default function Dashboard() {
     const userDocRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userDocRef);
     const freshUser = userSnap.data() as User;
+
     const recordDates = logs.map((l) => l.recordedAt);
     const totalRecords = logs.length;
     const consecutiveDays = calculateConsecutiveDays(recordDates);
@@ -88,7 +88,7 @@ export default function Dashboard() {
       consecutiveDays,
       hasBloodSugar,
       hasBloodPressure,
-      daysSince
+      daysSince,
     );
 
     if (earned && earned.length > 0) {
@@ -96,13 +96,30 @@ export default function Dashboard() {
     }
   };
 
+  /** 특정 타입의 가장 최신 기록 찾기 */
+  const getLatestLog = (type: "blood_sugar" | "blood_pressure") => {
+    const filtered = healthLogs.filter((l) => l.type === type);
+    if (filtered.length === 0) return null;
+
+    // recordedAt 기준으로 가장 최신 것 선택
+    return filtered.reduce((latest, current) =>
+      current.recordedAt > latest.recordedAt ? current : latest,
+    );
+  };
+
   const getLatestReading = (type: "blood_sugar" | "blood_pressure") => {
-    const log = healthLogs.find((l) => l.type === type);
+    const log = getLatestLog(type);
     if (!log) return null;
 
     return type === "blood_sugar"
       ? `${log.value} mg/dL`
       : `${log.systolic}/${log.diastolic} mmHg`;
+  };
+
+  const getLatestRecordedDate = (type: "blood_sugar" | "blood_pressure") => {
+    const log = getLatestLog(type);
+    if (!log) return null;
+    return new Date(log.recordedAt).toLocaleDateString("ko-KR");
   };
 
   const getTodayRecordCount = () => {
@@ -130,12 +147,12 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* 헤더 */}
       <div
-        className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white  py-8 lg:py-12 
+        className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-8 lg:py-12 
     min-h-[220px]"
       >
         <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
           <h1 className="text-3xl mb-8">
-            안녕하세요, {user.name}님! 👋
+            안녕하세요, {user.email.split("@")[0]}님! 👋
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -206,7 +223,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {/* 혈당 */}
           <Card className="hover:shadow-lg">
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                   <Droplet className="w-6 h-6 text-red-600" />
@@ -219,11 +236,8 @@ export default function Dashboard() {
 
               <Button
                 size="icon"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  setRecordType("blood_sugar");
-                  setIsModalOpen(true);
-                }}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => openModal("blood_sugar")}
               >
                 <Plus className="w-5 h-5" />
               </Button>
@@ -235,14 +249,15 @@ export default function Dashboard() {
               </div>
 
               <p className="text-sm text-gray-600">
-                최근 측정: {new Date().toLocaleDateString("ko-KR")}
+                최근 측정:{" "}
+                {getLatestRecordedDate("blood_sugar") ?? "-"}
               </p>
             </CardContent>
           </Card>
 
           {/* 혈압 */}
           <Card className="hover:shadow-lg">
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <Activity className="w-6 h-6 text-blue-600" />
@@ -255,11 +270,8 @@ export default function Dashboard() {
 
               <Button
                 size="icon"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  setRecordType("blood_pressure");
-                  setIsModalOpen(true);
-                }}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => openModal("blood_pressure")}
               >
                 <Plus className="w-5 h-5" />
               </Button>
@@ -271,7 +283,8 @@ export default function Dashboard() {
               </div>
 
               <p className="text-sm text-gray-600">
-                최근 측정: {new Date().toLocaleDateString("ko-KR")}
+                최근 측정:{" "}
+                {getLatestRecordedDate("blood_pressure") ?? "-"}
               </p>
             </CardContent>
           </Card>
@@ -279,7 +292,7 @@ export default function Dashboard() {
 
         {/* 주간 AI 리포트 */}
         <div className="mb-12">
-          <WeeklyAIReport healthLogs={healthLogs} />
+          <WeeklyAIReport healthLogs={healthLogs} userProfile={user.profile} />
         </div>
 
         {/* 최근 기록 */}
@@ -346,7 +359,7 @@ export default function Dashboard() {
         onSuccess={async () => {
           const logs = await getUserHealthLogs();
           setHealthLogs(logs);
-          if (user) awardBadges(user, logs);
+          if (user) await awardBadges(user, logs);
         }}
       />
 

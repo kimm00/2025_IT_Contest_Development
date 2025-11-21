@@ -14,22 +14,15 @@ import { Alert, AlertDescription } from "./ui/alert";
 
 import {
   Sparkles,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  Apple,
-  Footprints,
-  Brain,
   ChevronDown,
   ChevronUp,
   Calendar,
   Loader2,
   AlertCircle,
-  Key,
   RefreshCw,
 } from "lucide-react";
 
-import { type HealthLog } from "../utils/auth";
+import type { HealthLog, UserProfile } from "../utils/auth";
 import {
   analyzeHealthDataWithAI,
   hasOpenAIKey,
@@ -37,7 +30,17 @@ import {
   type AIAnalysis,
 } from "../utils/openai";
 
-function SectionHeader({ icon, title, subtitle }) {
+/* ---------------- 작은 UI 컴포넌트 ---------------- */
+
+function SectionHeader({
+  icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
   return (
     <div className="flex items-center gap-3 mb-2">
       <div className="p-2 bg-purple-100 rounded-lg">{icon}</div>
@@ -49,7 +52,15 @@ function SectionHeader({ icon, title, subtitle }) {
   );
 }
 
-function SummaryBox({ label, value, unit }) {
+function SummaryBox({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string | number;
+  unit?: string;
+}) {
   return (
     <div className="bg-white rounded-lg p-3 border border-purple-100">
       <div className="text-xs text-gray-500 mb-1">{label}</div>
@@ -59,7 +70,11 @@ function SummaryBox({ label, value, unit }) {
   );
 }
 
-function InsightBox({ insight }) {
+function InsightBox({
+  insight,
+}: {
+  insight: { title: string; description: string };
+}) {
   return (
     <div className="rounded-lg p-4 border-2 mt-2">
       <h5 className="font-medium">{insight.title}</h5>
@@ -88,6 +103,8 @@ function getTrendInfo(trend: string) {
   }
 }
 
+/* ---------------- 타입 ---------------- */
+
 interface WeeklyHealthData {
   weekNumber: number;
   startDate: string;
@@ -103,6 +120,7 @@ interface WeeklyHealthData {
 
 interface WeeklyAIReportInnerProps {
   healthLogs: HealthLog[];
+  userProfile?: UserProfile;
   weeklyData: WeeklyHealthData | null;
   setWeeklyData: any;
   aiAnalysis: AIAnalysis | null;
@@ -116,8 +134,11 @@ interface WeeklyAIReportInnerProps {
   setIsExpanded: any;
 }
 
+/* ---------------- 내부 컴포넌트 ---------------- */
+
 function WeeklyAIReportInner({
   healthLogs,
+  userProfile,
   weeklyData,
   setWeeklyData,
   aiAnalysis,
@@ -130,22 +151,16 @@ function WeeklyAIReportInner({
   isExpanded,
   setIsExpanded,
 }: WeeklyAIReportInnerProps) {
-  /* ----- 데이터 준비 ----- */
+  /* ----- 주간 데이터 생성 ----- */
   useEffect(() => {
     prepareWeeklyData();
   }, [healthLogs]);
 
-  useEffect(() => {
-    if (
-      weeklyData &&
-      weeklyData.totalRecords >= 1 &&
-      hasApiKey &&
-      !aiAnalysis &&
-      !isLoading
-    ) {
-      analyzeWithAI();
-    }
-  }, [weeklyData, hasApiKey]);
+  const getWeekNumber = (date: Date): number => {
+    const first = new Date(date.getFullYear(), 0, 1);
+    const diff = (date.getTime() - first.getTime()) / 86400000;
+    return Math.ceil((diff + first.getDay() + 1) / 7);
+  };
 
   const prepareWeeklyData = () => {
     const now = new Date();
@@ -175,7 +190,7 @@ function WeeklyAIReportInner({
       diastolic: l.diastolic!,
     }));
 
-    const avg = (arr) =>
+    const avg = (arr: number[]) =>
       arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : undefined;
 
     setWeeklyData({
@@ -198,13 +213,26 @@ function WeeklyAIReportInner({
     });
   };
 
+  /* ----- AI 자동 분석 ----- */
+  useEffect(() => {
+    if (
+      weeklyData &&
+      weeklyData.totalRecords >= 1 &&
+      hasApiKey &&
+      !aiAnalysis &&
+      !isLoading
+    ) {
+      analyzeWithAI();
+    }
+  }, [weeklyData, hasApiKey]);
+
   const analyzeWithAI = async () => {
-    if (!weeklyData) return;
+    if (!weeklyData || !hasApiKey) return;
     setIsLoading(true);
     setError(null);
     try {
-      const analysis = await analyzeHealthDataWithAI(weeklyData);
-      setAiAnalysis(analysis);
+      const result = await analyzeHealthDataWithAI(weeklyData, userProfile);
+      setAiAnalysis(result);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -212,55 +240,29 @@ function WeeklyAIReportInner({
     }
   };
 
-  const getWeekNumber = (date: Date): number => {
-    const first = new Date(date.getFullYear(), 0, 1);
-    const diff = (date.getTime() - first.getTime()) / 86400000;
-    return Math.ceil((diff + first.getDay() + 1) / 7);
-  };
+  /* ---------------- UI 상태 처리 ---------------- */
 
-  /* ------------------- 상태별 UI ------------------- */
   if (!hasApiKey) {
     return (
       <div className="p-6 rounded-xl border border-purple-200 bg-purple-50/40">
-        <div className="flex items-center gap-3 mb-3">
-          <Sparkles className="w-6 h-6 text-purple-600" />
-          <h3 className="text-lg font-semibold">AI 주간 건강 리포트</h3>
-        </div>
+        <SectionHeader
+          icon={<Sparkles className="text-purple-600" />}
+          title="AI 주간 건강 리포트"
+          subtitle="OpenAI API 키가 필요합니다"
+        />
 
         <p className="text-sm text-gray-700 mb-3 leading-relaxed">
-          GPT 기반 AI 분석을 사용하려면 OpenAI API 키가 필요합니다.
+          GPT 기반 AI 분석을 사용하려면 OpenAI API 키를 등록해주세요.
         </p>
 
-        <div className="text-sm text-gray-600 bg-white/80 p-3 rounded-lg border border-purple-100 mb-4">
-          <p className="font-medium text-gray-700">
-            발급 비용은{" "}
-            <span className="text-purple-600 font-bold">
-              약 0.05 ~ 0.07달러
-            </span>
-            정도로 매우 저렴해요!
-          </p>
-          <p className="text-gray-500 mt-1">
-            (한 달 동안 여러 번 분석해도 100원도 안 나와요 🥹)
-          </p>
-        </div>
-
         <a
-          href="https://platform.openai.com/settings/organization/api-keys"
+          href="https://platform.openai.com/account/api-keys"
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-purple-700 underline font-medium hover:text-purple-900"
         >
-          👉 OpenAI API 키 발급받기 (공식 사이트)
+          👉 OpenAI API 키 발급받기
         </a>
-
-        <div className="mt-5">
-          <Button
-            onClick={() => setIsExpanded(true)}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            API 키 입력하러 가기
-          </Button>
-        </div>
       </div>
     );
   }
@@ -271,9 +273,11 @@ function WeeklyAIReportInner({
         <SectionHeader
           icon={<Sparkles />}
           title="AI 주간 건강 리포트"
-          subtitle="기록 없음"
+          subtitle="이번 주 기록 없음"
         />
-        <p className="text-sm text-gray-600">이번 주 기록이 없습니다.</p>
+        <p className="text-sm text-gray-600">
+          이번 주에 기록된 건강 데이터가 없습니다.
+        </p>
       </>
     );
   }
@@ -291,7 +295,7 @@ function WeeklyAIReportInner({
     return (
       <>
         <SectionHeader
-          icon={<AlertCircle />}
+          icon={<AlertCircle className="text-red-600" />}
           title="AI 분석 오류"
           subtitle="다시 시도해주세요"
         />
@@ -301,13 +305,13 @@ function WeeklyAIReportInner({
         </Alert>
 
         <Button variant="outline" className="mt-2" onClick={analyzeWithAI}>
-          <RefreshCw className="w-4 h-4 mr-2" /> 재시도
+          <RefreshCw className="w-4 h-4 mr-2" /> 다시 분석하기
         </Button>
       </>
     );
   }
 
-  /* ----- 정상 --- */
+  /* ----- 정상 결과 UI ----- */
 
   const trendInfo = getTrendInfo(aiAnalysis?.trend ?? "stable");
 
@@ -338,7 +342,7 @@ function WeeklyAIReportInner({
           />
         )}
 
-        {weeklyData?.avgSystolic !== undefined && (
+        {weeklyData.avgSystolic !== undefined && (
           <SummaryBox
             label="평균 수축기"
             value={weeklyData.avgSystolic.toFixed(0)}
@@ -355,7 +359,7 @@ function WeeklyAIReportInner({
         )}
       </div>
 
-      {/* 인사이트 */}
+      {/* insights */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <h4 className="font-medium">AI 조언</h4>
@@ -363,38 +367,51 @@ function WeeklyAIReportInner({
         </div>
 
         {aiAnalysis?.insights
-          ?.slice(0, isExpanded ? aiAnalysis?.insights?.length ?? 0 : 2)
-          .map((i, idx) => (
-            <InsightBox key={idx} insight={i} />
+          ?.slice(0, isExpanded ? aiAnalysis.insights.length : 2)
+          .map((insight, idx) => (
+            <InsightBox key={idx} insight={insight} />
           ))}
 
-        {!isExpanded && (aiAnalysis?.insights?.length ?? 0) > 2 && (
+        {(aiAnalysis?.insights?.length ?? 0) > 2 && (
           <Button
             variant="outline"
             className="w-full mt-2"
-            onClick={() => setIsExpanded(true)}
+            onClick={() => setIsExpanded((prev: boolean) => !prev)}
           >
-            <ChevronDown className="w-4 h-4 mr-2" /> 더 보기
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-4 h-4 mr-2" /> 접기
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4 mr-2" /> 더 보기
+              </>
+            )}
           </Button>
         )}
       </div>
 
       <Separator className="mt-3" />
       <p className="text-xs text-gray-500 mt-2">
-        AI 조언은 참고용이며, 중요한 건강 결정은 전문의와 상담하세요.
+        AI 조언은 참고용이며, 건강 관련 중요한 결정은 전문의와 상담하세요.
       </p>
     </>
   );
 }
 
+/* ---------------- 메인 Export 컴포넌트 ---------------- */
+
 export default function WeeklyAIReport({
   healthLogs,
+  userProfile,
 }: {
   healthLogs: HealthLog[];
+  userProfile?: UserProfile;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [weeklyData, setWeeklyData] = useState<WeeklyHealthData | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
+  const [aiAnalysis, setAiAnalysis] =
+    useState<AIAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey] = useState(hasOpenAIKey());
@@ -404,6 +421,7 @@ export default function WeeklyAIReport({
       <CardContent className="p-6 flex flex-col gap-4">
         <WeeklyAIReportInner
           healthLogs={healthLogs}
+          userProfile={userProfile}
           weeklyData={weeklyData}
           setWeeklyData={setWeeklyData}
           aiAnalysis={aiAnalysis}
