@@ -42,6 +42,11 @@ export default function Dashboard() {
     "blood_sugar" | "blood_pressure"
   >("blood_sugar");
 
+  const openModal = (type: "blood_sugar" | "blood_pressure") => {
+    setRecordType(type);
+    setIsModalOpen(true);
+  };
+
   // 새로운 뱃지
   const [newBadges, setNewBadges] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +140,7 @@ export default function Dashboard() {
       >
         <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
           <h1 className="text-3xl mb-8">
-            안녕하세요, {user.name}님! 👋
+            안녕하세요, {user.email.split("@")[0]}님! 👋
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -206,7 +211,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {/* 혈당 */}
           <Card className="hover:shadow-lg">
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                   <Droplet className="w-6 h-6 text-red-600" />
@@ -219,11 +224,8 @@ export default function Dashboard() {
 
               <Button
                 size="icon"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  setRecordType("blood_sugar");
-                  setIsModalOpen(true);
-                }}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => openModal("blood_sugar")}
               >
                 <Plus className="w-5 h-5" />
               </Button>
@@ -242,7 +244,7 @@ export default function Dashboard() {
 
           {/* 혈압 */}
           <Card className="hover:shadow-lg">
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <Activity className="w-6 h-6 text-blue-600" />
@@ -255,7 +257,7 @@ export default function Dashboard() {
 
               <Button
                 size="icon"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-emerald-600 hover:bg-emerald-700"
                 onClick={() => {
                   setRecordType("blood_pressure");
                   setIsModalOpen(true);

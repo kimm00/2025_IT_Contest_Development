@@ -45,9 +45,12 @@ export default function MyPage() {
   const [user, setUser] = useState<User | null>(null);
   const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
 
-  const [apiKey, setApiKey] = useState(getOpenAIKey() || "");
+  // 🔑 API 키 관련 상태 (예전 스타일로 복원)
   const [showApiKey, setShowApiKey] = useState(false);
   const [isEditingApiKey, setIsEditingApiKey] = useState(!hasOpenAIKey());
+  const [savedKey, setSavedKey] = useState(getOpenAIKey() || "");
+  const [tempKey, setTempKey] = useState(savedKey);
+
   const [loading, setLoading] = useState(true);
 
   // ✅ 프로필 수정 모달 열림 상태
@@ -64,7 +67,6 @@ export default function MyPage() {
       }
 
       try {
-        // onAuthChange 에서 이미 Firestore User 객체를 넘겨줌
         setUser(currentUser);
 
         // 현재 로그인 사용자 건강 기록 가져오기
@@ -85,26 +87,36 @@ export default function MyPage() {
     return new Date(user.createdAt).toLocaleDateString("ko-KR");
   };
 
+  // 🔑 저장 버튼
   const handleSaveApiKey = () => {
-    if (apiKey.trim().length === 0) {
+    if (tempKey.trim().length === 0) {
       toast.error("API 키를 입력해주세요.");
       return;
     }
-    saveOpenAIKey(apiKey);
+
+    saveOpenAIKey(tempKey);
+    setSavedKey(tempKey);
+    setIsEditingApiKey(false);
     toast.success("API 키가 저장되었습니다.");
+  };
+
+  // 🔑 취소 버튼
+  const handleCancelEdit = () => {
+    setTempKey(savedKey); // 원래 값으로 복귀
     setIsEditingApiKey(false);
   };
 
+  // 🔑 삭제 버튼
   const handleRemoveApiKey = () => {
     removeOpenAIKey();
-    setApiKey("");
+    setSavedKey("");
+    setTempKey("");
     setIsEditingApiKey(true);
     toast.success("API 키가 삭제되었습니다.");
   };
 
-  // ✅ 프로필 수정 다이얼로그에서 저장 후 호출 (지금은 화면 갱신 대신 모달만 닫는 용도)
+  // ✅ 프로필 수정 다이얼로그에서 저장 후 호출
   const handleProfileUpdated = () => {
-    // 필요하면 여기서 추가로 토스트를 띄우거나 다른 갱신 로직을 넣을 수 있음
     toast.success("프로필이 업데이트되었습니다.");
   };
 
@@ -210,18 +222,17 @@ export default function MyPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* 프로필 카드 */}
             <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>프로필</CardTitle>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>프로필</CardTitle>
 
-                {/* ✅ 이 버튼이 이미 다이얼로그 트리거라서 별도 버튼 필요 없음 */}
-                <MyPageProfileDialog
-                  open={editDialogOpen}
-                  onOpenChange={setEditDialogOpen}
-                  onUpdate={handleProfileUpdated}
-                />
-              </div>
-            </CardHeader>
+                  <MyPageProfileDialog
+                    open={editDialogOpen}
+                    onOpenChange={setEditDialogOpen}
+                    onUpdate={handleProfileUpdated}
+                  />
+                </div>
+              </CardHeader>
 
               <CardContent>
                 {/* 기본 정보 */}
@@ -350,7 +361,6 @@ export default function MyPage() {
                       프로필 정보를 입력하면 맞춤형 건강 리포트를 받아볼 수
                       있습니다.
                     </p>
-                    {/* 프로필 미완성 시에도 작성 버튼 → 모달 오픈 */}
                     <Button
                       size="sm"
                       className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -399,9 +409,7 @@ export default function MyPage() {
               </CardHeader>
 
               <CardContent className="space-y-6">
-                {/* 상단 그라데이션 박스 */}
                 <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 rounded-xl border border-emerald-100">
-                  {/* 총 기부금 + 하트 아이콘 */}
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <p className="text-sm text-gray-600">총 기부금</p>
@@ -413,7 +421,6 @@ export default function MyPage() {
                     <Heart className="w-12 h-12 text-emerald-600 stroke-[1.5]" />
                   </div>
 
-                  {/* 다음 뱃지까지 */}
                   <div className="mb-4">
                     <div className="flex justify-between text-sm text-gray-600 mb-1">
                       <span>다음 뱃지까지</span>
@@ -426,7 +433,6 @@ export default function MyPage() {
                       </span>
                     </div>
 
-                    {/* 프로그레스 바 */}
                     <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
@@ -440,7 +446,6 @@ export default function MyPage() {
                     </div>
                   </div>
 
-                  {/* 정보 문구 */}
                   <div className="pt-4 border-t border-emerald-200">
                     <p className="text-sm text-gray-800 mb-1 font-medium">
                       💡 알고 계셨나요?
@@ -452,7 +457,6 @@ export default function MyPage() {
                   </div>
                 </div>
 
-                {/* 연속 기록 / 획득 뱃지 요약 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="border rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -526,36 +530,44 @@ export default function MyPage() {
                   </Badge>
                 </div>
 
-                {/* API Key 입력 / 수정 UI */}
+                {/* 🔑 API Key 입력 / 저장 UI (저장 버튼 포함) */}
                 {isEditingApiKey ? (
                   <>
-                    <div className="relative">
-                      <Input
-                        type={showApiKey ? "text" : "password"}
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="sk-..."
-                      />
+                    {/* 입력 + 눈 버튼 */}
+                    <div className="flex items-center gap-2 w-full">
+                      <div className="flex-1">
+                        <Input
+                          type={showApiKey ? "text" : "password"}
+                          value={tempKey}
+                          onChange={(e) => setTempKey(e.target.value)}
+                          placeholder="sk-..."
+                        />
+                      </div>
+
                       <Button
-                        variant="ghost"
-                        className="absolute right-0 top-0 h-full px-3"
+                        type="button"
+                        variant="outline"
                         onClick={() => setShowApiKey(!showApiKey)}
+                        className="px-3 shrink-0"
                       >
                         {showApiKey ? <EyeOff /> : <Eye />}
                       </Button>
                     </div>
 
-                    <div className="flex gap-2">
+                    {/* 저장 + 취소 */}
+                    <div className="flex justify-end gap-2 mt-4">
                       <Button
+                        variant="outline"
                         onClick={handleSaveApiKey}
-                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                        className="px-3 py-3 font-semibold"
                       >
                         저장
                       </Button>
                       {hasOpenAIKey() && (
                         <Button
                           variant="outline"
-                          onClick={() => setIsEditingApiKey(false)}
+                          onClick={handleCancelEdit}
+                          className="px-3 py-3 border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           취소
                         </Button>
