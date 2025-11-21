@@ -24,6 +24,25 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { toast } from "sonner";
+import { getAuth } from "firebase/auth";
+
+
+// 🔥 새로 만드는 함수 — 현재 로그인된 유저 정보 가져오기
+export async function getCurrentUser() {
+  const auth = getAuth();
+  const current = auth.currentUser;
+
+  if (!current) return null;
+
+  // Firestore 프로필 불러오는 기존 함수 호출
+  const profile = await getUserByUid(current.uid);
+
+  return {
+    uid: current.uid,
+    email: current.email,
+    profile,
+  };
+}
 
 export interface UserProfile {
   birthYear?: number;

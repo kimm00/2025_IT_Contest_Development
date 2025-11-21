@@ -74,6 +74,7 @@ export default function MyPageProfileDialog({
     exerciseFrequency: "",
   });
 
+  // ✅ 다이얼로그 열릴 때마다 Firestore에서 최신 프로필 불러오기
   useEffect(() => {
     if (!open) return;
 
@@ -112,25 +113,27 @@ export default function MyPageProfileDialog({
 
   const handleConditionToggle = (condition: string) => {
     if (condition === "none") {
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         conditions: ["none"],
         diabetesType: "",
         medicationType: "",
-      });
+      }));
     } else {
-      const current = formData.conditions.filter((c) => c !== "none");
-      if (current.includes(condition)) {
-        setFormData({
-          ...formData,
-          conditions: current.filter((c) => c !== condition),
-        });
-      } else {
-        setFormData({
-          ...formData,
-          conditions: [...current, condition],
-        });
-      }
+      setFormData((prev) => {
+        const withoutNone = prev.conditions.filter((c) => c !== "none");
+        if (withoutNone.includes(condition)) {
+          return {
+            ...prev,
+            conditions: withoutNone.filter((c) => c !== condition),
+          };
+        } else {
+          return {
+            ...prev,
+            conditions: [...withoutNone, condition],
+          };
+        }
+      });
     }
   };
 
@@ -177,6 +180,7 @@ export default function MyPageProfileDialog({
       completedAt: new Date().toISOString(),
     };
 
+    // ✅ updateUserProfile는 인자 1개만 받도록 사용
     const ok = await updateUserProfile(profile);
     if (!ok) return;
 
@@ -197,33 +201,20 @@ export default function MyPageProfileDialog({
         </Button>
       </DialogTrigger>
 
-      {/* 🔥 최종 해결: DialogContent 자체를 Flex 컨테이너로 만듭니다.
-          - flex flex-col: 자식 요소들을 세로로 정렬
-          - h-[80vh]: 높이를 화면의 80%로 강제 고정
-          - p-0 gap-0: 기본 패딩과 간격 제거 (내부에서 제어)
-          - overflow-hidden: 둥근 모서리 밖으로 내용이 나가는 것 방지
-      */}
-      <DialogContent className="flex flex-col w-[90vw] sm:w-[600px] max-w-[600px] h-[80vh] max-h-[80vh] p-0 gap-0 bg-white rounded-xl overflow-hidden border-0 shadow-lg outline-none">
-        
-        {/* 1. 헤더 (고정 영역) 
-            - shrink-0: 절대 줄어들지 않음 (높이 유지)
-        */}
-        <DialogHeader className="px-6 py-4 border-b shrink-0 bg-white text-left">
+      {/* 🔥 폭/높이 제한 + 내부 스크롤 적용 */}
+      <DialogContent className="w-[90vw] max-w-2xl">
+        <DialogHeader>
           <DialogTitle>프로필 수정</DialogTitle>
           <DialogDescription>
             당뇨/고혈압 맞춤 건강 관리를 위한 정보를 입력하세요
           </DialogDescription>
         </DialogHeader>
 
-        {/* 2. 본문 스크롤 영역 (가변 영역)
-            - flex-1: 남은 공간을 모두 차지함
-            - overflow-y-auto: 내용이 넘치면 스크롤 생성
-            - min-h-0: ✨ 중요! 이게 없으면 내용이 많을 때 flex 컨테이너를 뚫고 나갑니다.
-        */}
-        <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-6">
+        {/* 이 div만 스크롤되게 설정 */}
+        <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
           {/* 기본 신체 정보 */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold">기본 신체 정보</h4>
+            <h4 className="text-sm font-medium">기본 신체 정보</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-birthYear">출생연도</Label>
@@ -233,7 +224,10 @@ export default function MyPageProfileDialog({
                   placeholder="예: 1985"
                   value={formData.birthYear}
                   onChange={(e) =>
-                    setFormData({ ...formData, birthYear: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      birthYear: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -241,8 +235,8 @@ export default function MyPageProfileDialog({
                 <Label htmlFor="edit-gender">성별</Label>
                 <Select
                   value={formData.gender}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, gender: value })
+                  onValueChange={(value: string) =>
+                    setFormData((prev) => ({ ...prev, gender: value }))
                   }
                 >
                   <SelectTrigger>
@@ -255,6 +249,7 @@ export default function MyPageProfileDialog({
                 </Select>
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-height">키 (cm)</Label>
@@ -263,7 +258,10 @@ export default function MyPageProfileDialog({
                   type="number"
                   value={formData.height}
                   onChange={(e) =>
-                    setFormData({ ...formData, height: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      height: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -274,7 +272,10 @@ export default function MyPageProfileDialog({
                   type="number"
                   value={formData.weight}
                   onChange={(e) =>
-                    setFormData({ ...formData, weight: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      weight: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -283,7 +284,7 @@ export default function MyPageProfileDialog({
 
           {/* 질환 관리 정보 */}
           <div className="space-y-3 pt-4 border-t">
-            <h4 className="text-sm font-semibold">질환 관리 정보 ⭐</h4>
+            <h4 className="text-sm font-medium">질환 관리 정보 ⭐</h4>
             <div className="space-y-2">
               <Label>관리 중인 질환</Label>
               <div className="space-y-2">
@@ -305,10 +306,7 @@ export default function MyPageProfileDialog({
                       handleConditionToggle("hypertension")
                     }
                   />
-                  <Label
-                    htmlFor="edit-hypertension"
-                    className="cursor-pointer"
-                  >
+                  <Label htmlFor="edit-hypertension" className="cursor-pointer">
                     💓 고혈압
                   </Label>
                 </div>
@@ -343,7 +341,7 @@ export default function MyPageProfileDialog({
             {/* 당뇨 추가 정보 */}
             {hasDiabetes && (
               <div className="bg-blue-50 p-3 rounded-lg space-y-3">
-                <div className="flex items-center gap-2 text-blue-800 text-sm font-medium">
+                <div className="flex items-center gap-2 text-blue-800 text-sm">
                   <Droplet className="w-4 h-4" />
                   <span>당뇨병 상세 정보</span>
                 </div>
@@ -351,8 +349,11 @@ export default function MyPageProfileDialog({
                   <Label htmlFor="edit-diabetesType">당뇨 유형</Label>
                   <Select
                     value={formData.diabetesType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, diabetesType: value })
+                    onValueChange={(value: string) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        diabetesType: value,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -375,7 +376,10 @@ export default function MyPageProfileDialog({
                     step="0.1"
                     value={formData.hba1c}
                     onChange={(e) =>
-                      setFormData({ ...formData, hba1c: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        hba1c: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -385,7 +389,7 @@ export default function MyPageProfileDialog({
             {/* 고혈압 추가 정보 */}
             {hasHypertension && (
               <div className="bg-red-50 p-3 rounded-lg space-y-3">
-                <div className="flex items-center gap-2 text-red-800 text-sm font-medium">
+                <div className="flex items-center gap-2 text-red-800 text-sm">
                   <AlertCircle className="w-4 h-4" />
                   <span>평소 혈압</span>
                 </div>
@@ -398,10 +402,10 @@ export default function MyPageProfileDialog({
                       placeholder="130"
                       value={formData.systolicBP}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           systolicBP: e.target.value,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -413,10 +417,10 @@ export default function MyPageProfileDialog({
                       placeholder="85"
                       value={formData.diastolicBP}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           diastolicBP: e.target.value,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -424,6 +428,7 @@ export default function MyPageProfileDialog({
               </div>
             )}
 
+            {/* 공통 추가 정보 (진단 시기 / 약물) */}
             {!formData.conditions.includes("none") &&
               formData.conditions.length > 0 && (
                 <>
@@ -431,11 +436,11 @@ export default function MyPageProfileDialog({
                     <Label htmlFor="edit-diagnosisPeriod">진단 시기</Label>
                     <Select
                       value={formData.diagnosisPeriod}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
+                      onValueChange={(value: string) =>
+                        setFormData((prev) => ({
+                          ...prev,
                           diagnosisPeriod: value,
-                        })
+                        }))
                       }
                     >
                       <SelectTrigger>
@@ -452,11 +457,11 @@ export default function MyPageProfileDialog({
                     <Label htmlFor="edit-medicationType">약물 복용</Label>
                     <Select
                       value={formData.medicationType}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
+                      onValueChange={(value: string) =>
+                        setFormData((prev) => ({
+                          ...prev,
                           medicationType: value,
-                        })
+                        }))
                       }
                     >
                       <SelectTrigger>
@@ -478,16 +483,16 @@ export default function MyPageProfileDialog({
 
           {/* 생활 습관 */}
           <div className="space-y-3 pt-4 border-t">
-            <h4 className="text-sm font-semibold">생활 습관</h4>
+            <h4 className="text-sm font-medium">생활 습관</h4>
             <div className="space-y-2">
               <Label htmlFor="edit-alcoholFrequency">음주 빈도</Label>
               <Select
                 value={formData.alcoholFrequency}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
+                onValueChange={(value: string) =>
+                  setFormData((prev) => ({
+                    ...prev,
                     alcoholFrequency: value,
-                  })
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -504,11 +509,11 @@ export default function MyPageProfileDialog({
               <Label htmlFor="edit-smokingStatus">흡연 상태</Label>
               <Select
                 value={formData.smokingStatus}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
+                onValueChange={(value: string) =>
+                  setFormData((prev) => ({
+                    ...prev,
                     smokingStatus: value,
-                  })
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -525,11 +530,11 @@ export default function MyPageProfileDialog({
               <Label htmlFor="edit-exerciseFrequency">운동 빈도</Label>
               <Select
                 value={formData.exerciseFrequency}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
+                onValueChange={(value: string) =>
+                  setFormData((prev) => ({
+                    ...prev,
                     exerciseFrequency: value,
-                  })
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -546,10 +551,8 @@ export default function MyPageProfileDialog({
           </div>
         </div>
 
-        {/* 3. 하단 버튼 (고정 영역) 
-            - shrink-0: 절대 줄어들지 않음
-        */}
-        <div className="px-6 py-4 border-t bg-white shrink-0">
+        {/* 저장 버튼은 스크롤 영역 밖에 고정 */}
+        <div className="pt-4">
           <Button
             onClick={handleSave}
             className="w-full bg-emerald-600 hover:bg-emerald-700"

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Toaster } from "./components/ui/sonner";
 import { Page } from "./types/navigation";
-import { BrowserRouter, Routes, Route, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, useParams, useNavigate, useLocation } from "react-router-dom";
 
 import {
   onAuthChange,
@@ -111,11 +111,26 @@ export default function App() {
     navigate(pageToPath(page));
   };
 
+  // ✅ 프로필 완료 플래그를 로컬스토리지에서 읽는 헬퍼
+  const getLocalProfileCompleted = () => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("hk_profile_completed") === "1";
+  };
+
   // Firebase Auth 상태 구독
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       setCurrentUser(user);
       setAuthReady(true);
+
+      // ✅ 로그인/로그아웃 시 로컬 플래그도 정리
+      if (typeof window !== "undefined") {
+        if (!user) {
+          window.localStorage.removeItem("hk_profile_completed");
+        } else if (user.profile?.completedAt) {
+          window.localStorage.setItem("hk_profile_completed", "1");
+        }
+      }
     });
     return unsubscribe;
   }, []);
@@ -145,7 +160,9 @@ export default function App() {
     }
 
     // 2) 로그인 상태
-    const profileCompleted = !!currentUser.profile?.completedAt;
+    const localCompleted = getLocalProfileCompleted();
+    const remoteCompleted = !!currentUser.profile?.completedAt;
+    const profileCompleted = localCompleted || remoteCompleted;
 
     // 프로필 미완료인데 profile-setup이 아니면 profile-setup으로 이동
     if (!profileCompleted && path !== "/profile-setup") {
@@ -171,6 +188,14 @@ export default function App() {
 
   const handleSignupSuccess = () => {
     navigate("/login");
+  };
+
+  // ✅ 프로필 설정 완료/건너뛰기 시: 플래그 세팅 + 대시보드 이동
+  const handleProfileSetupDone = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("hk_profile_completed", "1");
+    }
+    navigate("/dashboard");
   };
 
   // authReady 전에 잠깐 로딩 화면
@@ -236,8 +261,8 @@ export default function App() {
           path="/profile-setup"
           element={
             <ProfileSetupPage
-              onComplete={() => handleNavigate("dashboard")}
-              onSkip={() => handleNavigate("dashboard")}
+              onComplete={handleProfileSetupDone}
+              onSkip={handleProfileSetupDone}
             />
           }
         />
@@ -289,9 +314,9 @@ export default function App() {
       </Routes>
 
       {/* 대시보드/리포트/마이페이지/커뮤니티에서만 푸터 보여주기 */}
-      {["dashboard", "report", "mypage", "community"].includes(
-        currentPage,
-      ) && <Footer onNavigate={handleNavigate} />}
+      {["dashboard", "report", "mypage", "community"].includes(currentPage) && (
+        <Footer onNavigate={handleNavigate} />
+      )}
 
       <Toaster />
     </div>
