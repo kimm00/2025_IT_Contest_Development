@@ -1,0 +1,375 @@
+// Dashboard.tsx
+import { useState, useEffect } from "react";
+import { Activity, Droplet, Heart, Plus, TrendingUp } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
+
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+
+import {
+  onAuthChange,
+  getUserHealthLogs,
+  type HealthLog,
+  type User,
+} from "../utils/auth";
+
+import HealthRecordModal from "./HealthRecordModal";
+import BadgeNotification from "./BadgeNotification";
+import WeeklyAIReport from "./WeeklyAIReport";
+
+import {
+  checkAndAwardBadges,
+  calculateConsecutiveDays,
+  daysSinceLastRecord,
+} from "../utils/badges";
+
+export default function Dashboard() {
+  const [user, setUser] = useState<User | null>(null);
+  const [healthLogs, setHealthLogs] = useState<HealthLog[]>([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [recordType, setRecordType] = useState<
+    "blood_sugar" | "blood_pressure"
+  >("blood_sugar");
+
+  const openModal = (type: "blood_sugar" | "blood_pressure") => {
+    setRecordType(type);
+    setIsModalOpen(true);
+  };
+
+  const [newBadges, setNewBadges] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setHealthLogs([]);
+        setLoading(false);
+        return;
+      }
+
+      setUser(currentUser);
+
+      const logs = await getUserHealthLogs();
+      setHealthLogs(logs);
+
+      await awardBadges(currentUser, logs);
+
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const awardBadges = async (user: User, logs: HealthLog[]) => {
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userDocRef);
+    const freshUser = userSnap.data() as User;
+
+    const recordDates = logs.map((l) => l.recordedAt);
+    const totalRecords = logs.length;
+    const consecutiveDays = calculateConsecutiveDays(recordDates);
+    const daysSince = daysSinceLastRecord(recordDates);
+
+    const hasBloodSugar = logs.some((l) => l.type === "blood_sugar");
+    const hasBloodPressure = logs.some((l) => l.type === "blood_pressure");
+
+    const earned = await checkAndAwardBadges(
+      freshUser,
+      totalRecords,
+      consecutiveDays,
+      hasBloodSugar,
+      hasBloodPressure,
+      daysSince,
+    );
+
+    if (earned && earned.length > 0) {
+      setNewBadges(earned);
+    }
+  };
+
+  /** 특정 타입의 가장 최신 기록 찾기 */
+  const getLatestLog = (type: "blood_sugar" | "blood_pressure") => {
+    const filtered = healthLogs.filter((l) => l.type === type);
+    if (filtered.length === 0) return null;
+
+    // recordedAt 기준으로 가장 최신 것 선택
+    return filtered.reduce((latest, current) =>
+      current.recordedAt > latest.recordedAt ? current : latest,
+    );
+  };
+
+  const getLatestReading = (type: "blood_sugar" | "blood_pressure") => {
+    const log = getLatestLog(type);
+    if (!log) return null;
+
+    return type === "blood_sugar"
+      ? `${log.value} mg/dL`
+      : `${log.systolic}/${log.diastolic} mmHg`;
+  };
+
+  const getLatestRecordedDate = (type: "blood_sugar" | "blood_pressure") => {
+    const log = getLatestLog(type);
+    if (!log) return null;
+    return new Date(log.recordedAt).toLocaleDateString("ko-KR");
+  };
+
+  const getTodayRecordCount = () => {
+    const today = new Date().toISOString().split("T")[0];
+    return healthLogs.filter((log) => log.recordedAt.startsWith(today)).length;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        대시보드 로딩 중...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        로그인 후 이용 가능합니다.
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-12">
+      {/* 헤더 */}
+      <div
+        className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-8 lg:py-12 
+    min-h-[220px]"
+      >
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
+          <h1 className="text-3xl mb-8">
+            안녕하세요, {user.email.split("@")[0]}님! 👋
+          </h1>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 누적 기부금 */}
+            <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
+              <CardHeader className="pb-4">
+                <CardDescription className="text-white/80">
+                  누적 기부금
+                </CardDescription>
+                <CardTitle className="text-4xl font-bold">
+                  ₩{user.totalDonation.toLocaleString()}
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <Heart className="w-4 h-4" />
+                  <span>매일 기록으로 생명을 살립니다</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 오늘 기록 */}
+            <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
+              <CardHeader className="pb-4">
+                <CardDescription className="text-white/80">
+                  오늘 기록
+                </CardDescription>
+                <CardTitle className="text-4xl font-bold">
+                  {getTodayRecordCount()}회
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <Activity className="w-4 h-4" />
+                  <span>꾸준한 기록이 습관을 만듭니다</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 전체 기록 */}
+            <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
+              <CardHeader className="pb-4">
+                <CardDescription className="text-white/80">
+                  전체 기록
+                </CardDescription>
+                <CardTitle className="text-4xl font-bold">
+                  {healthLogs.length}회
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="pt-0">
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>계속 성장 중입니다</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* 건강 기록 입력 */}
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-8">
+        <h2 className="text-2xl mb-6">오늘의 건강 기록</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {/* 혈당 */}
+          <Card className="hover:shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <Droplet className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <CardTitle>혈당 기록</CardTitle>
+                  <CardDescription>Blood Sugar Level</CardDescription>
+                </div>
+              </div>
+
+              <Button
+                size="icon"
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => openModal("blood_sugar")}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </CardHeader>
+
+            <CardContent>
+              <div className="text-3xl font-semibold mb-3">
+                {getLatestReading("blood_sugar") || "데이터 없음"}
+              </div>
+
+              <p className="text-sm text-gray-600">
+                최근 측정:{" "}
+                {getLatestRecordedDate("blood_sugar") ?? "-"}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* 혈압 */}
+          <Card className="hover:shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle>혈압 기록</CardTitle>
+                  <CardDescription>Blood Pressure</CardDescription>
+                </div>
+              </div>
+
+              <Button
+                size="icon"
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => openModal("blood_pressure")}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </CardHeader>
+
+            <CardContent>
+              <div className="text-3xl font-semibold mb-3">
+                {getLatestReading("blood_pressure") || "데이터 없음"}
+              </div>
+
+              <p className="text-sm text-gray-600">
+                최근 측정:{" "}
+                {getLatestRecordedDate("blood_pressure") ?? "-"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 주간 AI 리포트 */}
+        <div className="mb-12">
+          <WeeklyAIReport healthLogs={healthLogs} userProfile={user.profile} />
+        </div>
+
+        {/* 최근 기록 */}
+        <div>
+          <h2 className="text-2xl mb-6">최근 기록</h2>
+          {healthLogs.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p>아직 기록이 없습니다.</p>
+                <p className="text-sm text-gray-500">
+                  첫 기록을 저장하면 100원이 기부됩니다!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {healthLogs.slice(0, 10).map((log) => (
+                <Card key={log.id}>
+                  <CardContent className="flex items-center justify-between py-4">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          log.type === "blood_sugar"
+                            ? "bg-red-100"
+                            : "bg-blue-100"
+                        }`}
+                      >
+                        {log.type === "blood_sugar" ? (
+                          <Droplet className="w-5 h-5 text-red-600" />
+                        ) : (
+                          <Activity className="w-5 h-5 text-blue-600" />
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="font-medium">
+                          {log.type === "blood_sugar" ? "혈당" : "혈압"}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(log.recordedAt).toLocaleString("ko-KR")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="text-lg">
+                      {log.type === "blood_sugar"
+                        ? `${log.value} mg/dL`
+                        : `${log.systolic}/${log.diastolic} mmHg`}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 모달 */}
+      <HealthRecordModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        recordType={recordType}
+        onSuccess={async () => {
+          const logs = await getUserHealthLogs();
+          setHealthLogs(logs);
+          if (user) await awardBadges(user, logs);
+        }}
+      />
+
+      {/* 뱃지 알림 */}
+      {newBadges.length > 0 && (
+        <BadgeNotification
+          badgeIds={newBadges}
+          onClose={() => setNewBadges([])}
+        />
+      )}
+    </div>
+  );
+}
