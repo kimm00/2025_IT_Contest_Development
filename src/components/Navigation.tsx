@@ -14,8 +14,12 @@ import { Button } from "./ui/button";
 import { logout } from "../utils/auth";
 import { cn } from "../lib/utils";
 
+import { Page } from "../types/navigation";
+
 interface NavigationProps {
   userEmail: string;
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
 }
 
 export default function Navigation({ userEmail }: NavigationProps) {
