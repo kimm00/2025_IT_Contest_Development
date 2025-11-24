@@ -29,6 +29,9 @@ import Footer from "./components/Footer";
     Path → Page 타입 매핑
 ------------------------------------------------------- */
 const pathToPage = (pathname: string): Page => {
+  if (pathname.startsWith("/user/")) {
+    return "user-profile";
+  }
   switch (pathname) {
     case "/": return "landing";
     case "/login": return "login";
@@ -61,6 +64,7 @@ const pageToPath = (page: Page): string => {
     case "partnership": return "/partnership";
     case "privacy": return "/privacy";
     case "terms": return "/terms";
+    case "user-profile": return "/community";
   }
 };
 
