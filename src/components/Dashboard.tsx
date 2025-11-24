@@ -150,9 +150,9 @@ export default function Dashboard() {
         className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-8 lg:py-12 
     min-h-[220px]"
       >
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-8 lg:mt-16">
           <h1 className="text-3xl mb-8">
-            안녕하세요, {user.email.split("@")[0]}님! 👋
+            안녕하세요, {user.name}님! 👋
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

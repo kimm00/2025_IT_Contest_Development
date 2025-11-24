@@ -176,14 +176,12 @@ export default function HealthRecordModal({
                         <SelectItem value="lunch_after">🍱 점심 식후 2시간</SelectItem>
                         <SelectItem value="dinner_after">🍽️ 저녁 식후 2시간</SelectItem>
                         <SelectItem value="bedtime">🌙 취침 전</SelectItem>
-                        <SelectItem value="other">기타</SelectItem>
                     </>
                     ) : (
                     <>
                         <SelectItem value="morning">🌅 아침 (기상 후)</SelectItem>
                         <SelectItem value="afternoon">☀️ 오후 (점심 후)</SelectItem>
                         <SelectItem value="evening">🌙 저녁 (취침 전)</SelectItem>
-                        <SelectItem value="other">기타</SelectItem>
                     </>
                     )}
                 </SelectContent>

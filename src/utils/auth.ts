@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   type User as AuthUser,
+  getAuth,
 } from "firebase/auth";
 import {
   doc,
@@ -12,37 +13,19 @@ import {
   getDoc,
   updateDoc,
   collection,
-  addDoc,
   query,
   where,
   getDocs,
-  serverTimestamp,
   runTransaction,
   orderBy,
   onSnapshot,
-  limit,
   type Unsubscribe,
 } from "firebase/firestore";
 import { toast } from "sonner";
-import { getAuth } from "firebase/auth";
 
-
-// 현재 로그인된 유저 정보 가져오기
-export async function getCurrentUser() {
-  const auth = getAuth();
-  const current = auth.currentUser;
-
-  if (!current) return null;
-
-  // Firestore 프로필 불러오는 기존 함수 호출
-  const profile = await getUserByUid(current.uid);
-
-  return {
-    uid: current.uid,
-    email: current.email,
-    profile,
-  };
-}
+// =================================================================
+// 1. 타입 정의 (Types)
+// =================================================================
 
 export interface UserProfile {
   birthYear?: number;
@@ -83,34 +66,44 @@ export interface HealthLog {
   id: string;
   userId: string;
   type: "blood_sugar" | "blood_pressure";
-  value?: number;
-  systolic?: number;
-  diastolic?: number;
-  measuredTime?: string;
-  recordedAt: string;
+  value?: number;      // 혈당
+  systolic?: number;   // 수축기
+  diastolic?: number;  // 이완기
+  measuredTime?: string; // 측정 시간대
+  recordedAt: string;  // ISO String
 }
 
-// --- 2. 인증 함수 (Firebase Auth) ---
+// =================================================================
+// 2. 유틸리티 함수 (Helper)
+// =================================================================
 
 /**
- * 회원가입 (Auth + Firestore)
+ * UTC 시간을 한국 시간(KST) 기준 날짜 문자열(YYYY-MM-DD)로 변환
+ * 예: "2025-11-25T01:00:00Z" (UTC) -> "2025-11-25" (KST)
  */
-export async function signup(
-  email: string,
-  password: string,
-  name: string
-): Promise<boolean> {
+function getKSTDateString(isoString?: string | null): string {
+  const date = isoString ? new Date(isoString) : new Date();
+  // UTC 시간에 9시간을 더함
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kstDate.toISOString().split("T")[0];
+}
+
+// 현재 로그인된 유저 정보 가져오기 (Auth 객체 기준)
+export function getCurrentUser() {
+  const authInstance = getAuth();
+  return authInstance.currentUser;
+}
+
+// =================================================================
+// 3. 인증 함수 (Auth)
+// =================================================================
+
+export async function signup(email: string, password: string, name: string): Promise<boolean> {
   try {
-    // 1. Firebase Auth에 유저 생성
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // 2. Firestore 'users' 컬렉션에 프로필 문서 생성
-    const userDocRef = doc(db, "users", user.uid); // ID를 uid로 사용
+    const userDocRef = doc(db, "users", user.uid);
     await setDoc(userDocRef, {
       uid: user.uid,
       email: user.email,
@@ -118,7 +111,7 @@ export async function signup(
       totalDonation: 0,
       createdAt: new Date().toISOString(),
       lastRecordDate: null,
-      badges: ["goal_setter"], // 'Goal Setter' 뱃지 기본 부여
+      badges: ["goal_setter"],
     });
 
     return true;
@@ -133,13 +126,9 @@ export async function signup(
   }
 }
 
-/**
- * 로그인 (Firebase Auth)
- */
 export async function login(email: string, password: string): Promise<boolean> {
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // 로그인 성공 시, Auth가 세션을 자동으로 관리 (localStorage 불필요)
     return true;
   } catch (error: any) {
     if (error.code === "auth/invalid-credential") {
@@ -152,76 +141,54 @@ export async function login(email: string, password: string): Promise<boolean> {
   }
 }
 
-/**
- * 로그아웃 (Firebase Auth)
- */
 export async function logout(): Promise<void> {
   try {
     await signOut(auth);
-    // 로그아웃 성공 시, Auth가 세션을 자동으로 제거
   } catch (error: any) {
     toast.error("로그아웃 중 오류가 발생했습니다.");
     console.error("Logout Error: ", error);
   }
 }
 
-// --- 3. 사용자 프로필 함수 (Firestore) ---
+// =================================================================
+// 4. 사용자 프로필 함수 (User Profile)
+// =================================================================
 
-/**
- * (중요) 실시간 사용자 상태 감지 (Auth + Firestore)
- * React Context에서 이 함수를 사용하여 로그인 상태를 감지합니다.
- * try/catch를 추가하여 프로필 로드 실패 시에도 앱이 멈추지 않도록 함
- */
-export function onAuthChange(
-  callback: (user: User | null) => void
-): () => void {
-  // onAuthStateChanged는 구독 해제 함수를 반환합니다.
+export function onAuthChange(callback: (user: User | null) => void): () => void {
   return onAuthStateChanged(auth, async (authUser: AuthUser | null) => {
     try {
       if (authUser) {
-        // 1. Auth에는 로그인됨 -> Firestore에서 프로필 정보를 가져옴
-        const userProfile = await getCurrentUserProfile(authUser.uid);
-
+        const userProfile = await getUserByUid(authUser.uid);
         if (userProfile) {
-          callback(userProfile); // 프로필 정보(이름, 기부금 등)와 함께 반환
+          callback(userProfile);
         } else {
-          // Auth에는 있지만 DB에 프로필이 없는 비정상적 경우
           callback(null);
         }
       } else {
-        // 2. 로그아웃됨
         callback(null);
       }
     } catch (error) {
-      // 3. getCurrentUserProfile에서 오류 발생 시
       console.error("Error during auth state change:", error);
       callback(null);
     }
   });
 }
 
-/**
- * (Helper) uid로 Firestore에서 사용자 프로필 가져오기
- */
-export async function getCurrentUserProfile(uid: string): Promise<User | null> {
+export async function getUserByUid(uid: string): Promise<User | null> {
   const userDocRef = doc(db, "users", uid);
   const userDoc = await getDoc(userDocRef);
 
   if (userDoc.exists()) {
     return userDoc.data() as User;
   } else {
-    // 프로필이 없는 경우 (이론상 signup에서 생성해야 함)
     console.error("No user profile found in Firestore for UID:", uid);
     return null;
   }
 }
 
-/**
- * 현재 로그인된 사용자 프로필 업데이트
- */
-export async function updateCurrentUserProfile(
-  updates: Partial<Omit<User, "uid" | "email">>
-): Promise<boolean> {
+export const getCurrentUserProfile = getUserByUid;
+
+export async function updateCurrentUserProfile(updates: Partial<Omit<User, "uid" | "email">>): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) {
     toast.error("로그인이 필요합니다.");
@@ -230,10 +197,7 @@ export async function updateCurrentUserProfile(
 
   const userDocRef = doc(db, "users", user.uid);
   try {
-    await updateDoc(userDocRef, {
-      ...updates,
-      // (필요시 'updatedAt: serverTimestamp()' 추가)
-    });
+    await updateDoc(userDocRef, { ...updates });
     return true;
   } catch (error) {
     toast.error("프로필 업데이트 중 오류가 발생했습니다.");
@@ -242,13 +206,7 @@ export async function updateCurrentUserProfile(
   }
 }
 
-/**
- * 상세 건강 프로필 업데이트 (ProfileSetupPage에서 사용)
- * users/{uid} 문서의 profile 필드를 통째로 교체
- */
-export async function updateUserProfile(
-  profile: UserProfile
-): Promise<boolean> {
+export async function updateUserProfile(profile: UserProfile): Promise<boolean> {
   const authUser = auth.currentUser;
   if (!authUser) {
     toast.error("로그인이 필요합니다.");
@@ -256,20 +214,13 @@ export async function updateUserProfile(
   }
 
   const userDocRef = doc(db, "users", authUser.uid);
-
-  // 🔹 1) undefined 값 제거
   const cleanedProfile: Record<string, any> = {};
   Object.entries(profile).forEach(([key, value]) => {
-    if (value !== undefined) {
-      cleanedProfile[key] = value;
-    }
+    if (value !== undefined) cleanedProfile[key] = value;
   });
 
   try {
-    await updateDoc(userDocRef, {
-      profile: cleanedProfile,
-      // 필요하면 updatedAt: serverTimestamp() 도 추가 가능
-    });
+    await updateDoc(userDocRef, { profile: cleanedProfile });
     return true;
   } catch (error) {
     console.error("Update User Profile Error: ", error);
@@ -278,11 +229,12 @@ export async function updateUserProfile(
   }
 }
 
-// --- 4. 건강 기록 함수 (Firestore Transaction) ---
+// =================================================================
+// 5. 건강 기록 함수 (Health Logs & Donation Logic)
+// =================================================================
 
 /**
- * 건강 기록 추가 및 기부금 적립 (F-02, F-03)
- * [중요] '기록 추가'와 '기부금 적립'을 하나의 트랜잭션으로 처리
+ * 건강 기록 추가 및 기부금 적립
  */
 export async function addHealthLog(
   logData: Omit<HealthLog, "id" | "userId">
@@ -304,34 +256,35 @@ export async function addHealthLog(
       }
 
       const userData = userDoc.data() as User;
-      const now = new Date();
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const kstDate = new Date(now.getTime() + kstOffset);
-      const today = kstDate.toISOString().split("T")[0];
-      const lastRecordDate = userData.lastRecordDate?.split("T")[0];
+      
+      // 1. 현재 날짜(오늘)를 한국 시간(KST) 기준 YYYY-MM-DD로 변환
+      const todayKST = getKSTDateString(); 
+      
+      // 2. DB에 저장된 마지막 기록 날짜도 KST 기준 YYYY-MM-DD로 변환 (UTC -> KST 변환 필수)
+      const lastRecordDateKST = userData.lastRecordDate 
+        ? getKSTDateString(userData.lastRecordDate) 
+        : "";
 
-      let newTotalDonation = userData.totalDonation;
-      let newLastRecordDate = userData.lastRecordDate;
-
-      // 기부금 적립 로직 (하루 한 번)
-      if (lastRecordDate !== today) {
+      let newTotalDonation = userData.totalDonation || 0;
+      
+      // 3. 날짜 비교: "오늘 날짜(KST)"와 "마지막 기록 날짜(KST)"가 다르면 포인트 지급
+      if (lastRecordDateKST !== todayKST) {
         newTotalDonation += 100;
-        newLastRecordDate = new Date().toISOString(); // 마지막 활동 시간은 '현재'로 갱신
         wasFirstDonation = true;
       }
 
-      // 건강 기록 저장
+      // 4. 건강 기록 저장 (healthLogs 컬렉션)
       const newLogRef = doc(collection(db, "healthLogs"));
       transaction.set(newLogRef, {
         userId: user.uid,
         id: newLogRef.id,
-        ...logData,
+        ...logData, // measuredTime, recordedAt 포함됨
       });
 
-      // 사용자 프로필 업데이트
+      // 5. 사용자 프로필 업데이트 (마지막 기록 시간은 항상 최신으로 갱신)
       transaction.update(userDocRef, {
         totalDonation: newTotalDonation,
-        lastRecordDate: newLastRecordDate,
+        lastRecordDate: new Date().toISOString(), // 저장 자체는 표준 UTC ISO 포맷으로
       });
     });
 
@@ -343,19 +296,12 @@ export async function addHealthLog(
   }
 }
 
-/**
- * (F-04) 현재 사용자의 모든 건강 기록 조회
- */
 export async function getUserHealthLogs(): Promise<HealthLog[]> {
   const user = auth.currentUser;
-  if (!user) {
-    return []; // 로그인 안했으면 빈 배열 반환
-  }
+  if (!user) return [];
 
   try {
     const logsCollectionRef = collection(db, "healthLogs");
-    // 1. userId가 일치하는 문서를
-    // 2. 'recordedAt' 기준으로 내림차순(최신순) 정렬
     const q = query(
       logsCollectionRef,
       where("userId", "==", user.uid),
@@ -363,14 +309,8 @@ export async function getUserHealthLogs(): Promise<HealthLog[]> {
     );
 
     const querySnapshot = await getDocs(q);
-
-    // 3. 문서 배열로 변환
     return querySnapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        } as HealthLog)
+      (doc) => ({ id: doc.id, ...doc.data() } as HealthLog)
     );
   } catch (error) {
     toast.error("기록을 불러오는 중 오류가 발생했습니다.");
@@ -379,42 +319,20 @@ export async function getUserHealthLogs(): Promise<HealthLog[]> {
   }
 }
 
-/**
- * 실시간 사용자 프로필 구독 (onSnapshot)
- */
 export function subscribeToUserProfile(
   uid: string,
   callback: (user: User | null) => void
 ): Unsubscribe {
   const userDocRef = doc(db, "users", uid);
-
-  const unsubscribe = onSnapshot(
-    userDocRef,
-    (doc) => {
-      if (doc.exists()) {
-        callback(doc.data() as User);
-      } else {
-        callback(null);
-      }
-    },
-    (error) => {
-      console.error("Error subscribing to user profile:", error);
-      toast.error("사용자 정보 실시간 연동에 실패했습니다.");
-      callback(null);
-    }
-  );
-
-  return unsubscribe;
+  return onSnapshot(userDocRef, (doc) => {
+    if (doc.exists()) callback(doc.data() as User);
+    else callback(null);
+  }, (error) => {
+    console.error("Error subscribing to user profile:", error);
+    callback(null);
+  });
 }
 
-// 이메일로 사용자 검색
-export async function getUserByUid(uid: string): Promise<User | null> {
-  const ref = doc(db, "users", uid);
-  const snap = await getDoc(ref);
-  return snap.exists() ? (snap.data() as User) : null;
-}
-
-// 사용자 존재 체크 유틸
 export async function userExistsByEmail(email: string): Promise<boolean> {
   const q = query(collection(db, "users"), where("email", "==", email));
   const snap = await getDocs(q);

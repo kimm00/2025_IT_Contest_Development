@@ -96,7 +96,7 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                 <Heart className="w-10 h-10 text-emerald-600 mb-4" />
                 <h3 className="text-gray-900 mb-3">기부금 매칭</h3>
                 <p className="text-gray-600 mb-4">
-                  사용자가 건강 데이터를 기록할 때마다 아템제약이 100원씩 기부금을 매칭하여
+                  사용자가 건강 데이터를 기록할 때마다 아템제약이 100P씩 기부금을 매칭하여
                   실제 환자 지원 프로그램에 사용됩니다.
                 </p>
                 <div className="bg-emerald-50 rounded-lg p-4">
@@ -199,7 +199,7 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
                   <div className="text-3xl text-center mb-2">🌱</div>
                   <h4 className="text-center mb-2">새싹콩</h4>
-                  <p className="text-xs text-gray-600 text-center mb-3">0 ~ 4,999원</p>
+                  <p className="text-xs text-gray-600 text-center mb-3">0 ~ 4,999P</p>
                   <div className="bg-white rounded p-3 text-xs">
                     <p className="text-emerald-600 mb-2">🎟️ 후원 혜택</p>
                     <ul className="space-y-1 text-gray-600">
@@ -213,7 +213,7 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-4 border border-emerald-200">
                   <div className="text-3xl text-center mb-2">🌿</div>
                   <h4 className="text-center mb-2">성장콩</h4>
-                  <p className="text-xs text-gray-600 text-center mb-3">5,000 ~ 9,999원</p>
+                  <p className="text-xs text-gray-600 text-center mb-3">5,000 ~ 9,999P</p>
                   <div className="bg-white rounded p-3 text-xs">
                     <p className="text-emerald-600 mb-2">🎟️ 후원 혜택</p>
                     <ul className="space-y-1 text-gray-600">
@@ -228,7 +228,7 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                   <div className="text-3xl text-center mb-2">😇</div>
                   <h4 className="text-center mb-2">기부콩</h4>
                   <p className="text-xs text-gray-600 text-center mb-3">
-                    10,000 ~ 29,999원
+                    10,000 ~ 29,999P
                   </p>
                   <div className="bg-white rounded p-3 text-xs">
                     <p className="text-blue-600 mb-2">🎁 후원 혜택</p>
@@ -244,7 +244,7 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                   <div className="text-3xl text-center mb-2">👼</div>
                   <h4 className="text-center mb-2">황금콩</h4>
                   <p className="text-xs text-gray-600 text-center mb-3">
-                    30,000 ~ 99,999원
+                    30,000 ~ 99,999P
                   </p>
                   <div className="bg-white rounded p-3 text-xs">
                     <p className="text-amber-600 mb-2">✨ 후원 혜택</p>
@@ -260,7 +260,7 @@ export default function PartnershipPage({ onNavigateBack }: PartnershipPageProps
                   <div className="text-3xl text-center mb-2">🏆</div>
                   <h4 className="text-center mb-2">플래티넘콩</h4>
                   <p className="text-xs text-gray-600 text-center mb-3">
-                    100,000원 이상
+                    100,000P 이상
                     <br />
                     (약 3년간 매일 기록)
                   </p>
