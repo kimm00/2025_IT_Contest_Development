@@ -290,7 +290,7 @@ export default function CommunityPage({
                         {userLevel.description}
                       </p>
                       <p className="text-emerald-200 text-sm mt-1">
-                        누적 기부금: {totalDonation.toLocaleString()}원
+                        누적 포인트: {totalDonation.toLocaleString()}P
                       </p>
                     </div>
                   </div>
@@ -684,10 +684,10 @@ export default function CommunityPage({
               🏆 헬시콩 커뮤니티 레벨 가이드
             </h3>
             <p className="text-gray-600 text-sm text-center mb-2">
-              기부금 누적액에 따라 레벨이 올라가요!
+              포인트 누적액에 따라 레벨이 올라가요!
             </p>
             <p className="text-xs text-gray-500 text-center mb-6">
-              💡 하루 최대 100원 × 1,000일 = 플래티넘콩 달성 (약 3년)
+              💡 하루 최대 100P × 1,000일 = 플래티넘콩 달성 (약 3년)
             </p>
 
             <div className="grid md:grid-cols-5 gap-4 mb-8">
@@ -698,12 +698,12 @@ export default function CommunityPage({
                     {level.name}
                   </Badge>
                   <p className="text-xs text-gray-600 mb-1">
-                    {level.minAmount.toLocaleString()}원 ~
+                    {level.minAmount.toLocaleString()}P ~
                   </p>
                   <p className="text-xs text-gray-600 mb-2">
                     {level.maxAmount === Infinity
                       ? "∞"
-                      : level.maxAmount.toLocaleString() + "원"}
+                      : level.maxAmount.toLocaleString() + "P"}
                   </p>
                   <p className="text-xs text-gray-500 px-2 leading-snug">
                     {level.description}
@@ -723,7 +723,7 @@ export default function CommunityPage({
               <div className="grid md:grid-cols-5 gap-3 text-xs">
                 <div className="bg-white rounded-lg p-3 border border-green-200">
                   <div className="text-center mb-2">🌱 새싹콩</div>
-                  <p className="text-gray-500 text-xs mb-2">0 ~ 4,999원</p>
+                  <p className="text-gray-500 text-xs mb-2">0 ~ 4,999P</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
                     <li>
                       • 첫 건강기록 달성 시
@@ -741,7 +741,7 @@ export default function CommunityPage({
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-emerald-200">
                   <div className="text-center mb-2">🌿 성장콩</div>
-                  <p className="text-gray-500 text-xs mb-2">5,000 ~ 9,999원</p>
+                  <p className="text-gray-500 text-xs mb-2">5,000 ~ 9,999P</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
                     <li>
                       • 2주 연속 기록 완료 시
@@ -759,10 +759,10 @@ export default function CommunityPage({
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-blue-200">
                   <div className="text-center mb-2">😇 기부콩</div>
-                  <p className="text-gray-500 text-xs mb-2">10,000 ~ 29,999원</p>
+                  <p className="text-gray-500 text-xs mb-2">10,000 ~ 29,999P</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
                     <li>
-                      • 누적 10,000원 돌파 시
+                      • 누적 10,000P 돌파 시
                       <br />
                       '기부콩' 인증카드
                     </li>
@@ -777,7 +777,7 @@ export default function CommunityPage({
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-amber-200">
                   <div className="text-center mb-2">👼 황금콩</div>
-                  <p className="text-gray-500 text-xs mb-2">30,000 ~ 99,999원</p>
+                  <p className="text-gray-500 text-xs mb-2">30,000 ~ 99,999P</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
                     <li>
                       • 누적 기부 + 커뮤니티
@@ -795,7 +795,7 @@ export default function CommunityPage({
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-purple-200">
                   <div className="text-center mb-2">🏆 플래티넘콩</div>
-                  <p className="text-gray-500 text-xs mb-2">100,000원 이상</p>
+                  <p className="text-gray-500 text-xs mb-2">100,000P 이상</p>
                   <ul className="space-y-1 text-gray-600 leading-relaxed">
                     <li>
                       • 거의 3년간 매일 기록한

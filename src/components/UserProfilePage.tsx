@@ -375,7 +375,7 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
             <p className="text-center text-sm text-gray-600">
               {user.name}님은{" "}
               <strong className="text-emerald-700">
-                {totalDonation.toLocaleString()}원
+                {totalDonation.toLocaleString()}P
               </strong>
               의 기부금으로
               <br />

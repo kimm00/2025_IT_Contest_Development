@@ -86,7 +86,7 @@ export const ALL_BADGES: Badge[] = [
     category: "donation",
     emoji: "💚",
     color: "bg-green-100 text-green-700 border-green-300",
-    condition: "첫 기부 (100원)",
+    condition: "첫 기부 (100P)",
   },
   {
     id: "giving_spirit",
@@ -96,7 +96,7 @@ export const ALL_BADGES: Badge[] = [
     category: "donation",
     emoji: "🌱",
     color: "bg-emerald-100 text-emerald-700 border-emerald-300",
-    condition: "누적 기부 5,000원",
+    condition: "누적 기부 5,000P",
   },
   {
     id: "donation_star",
@@ -106,7 +106,7 @@ export const ALL_BADGES: Badge[] = [
     category: "donation",
     emoji: "⭐",
     color: "bg-blue-100 text-blue-700 border-blue-300",
-    condition: "누적 기부 30,000원",
+    condition: "누적 기부 30,000P",
   },
   {
     id: "hope_maker",
@@ -116,7 +116,7 @@ export const ALL_BADGES: Badge[] = [
     category: "donation",
     emoji: "🌈",
     color: "bg-purple-100 text-purple-700 border-purple-300",
-    condition: "누적 기부 100,000원",
+    condition: "누적 기부 100,000P",
   },
 
   // 도전 / 성장 관련 뱃지
@@ -167,7 +167,7 @@ export async function checkAndAwardBadges(
 ): Promise<string[]> {
   const newBadges: string[] = [];
   const currentBadges = user.badges || []; // 사용자의 현재 뱃지 목록
-  const totalDonation = user.totalDonation; // 사용자의 현재 기부금
+  const totalDonation = user.totalDonation; // 사용자의 현재 포인트
 
   // 첫 기록
   if (totalRecords === 1 && !currentBadges.includes("first_record")) {
