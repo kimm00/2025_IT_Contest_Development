@@ -1,16 +1,14 @@
 // src/pages/UserProfilePage.tsx
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Heart, Calendar, TrendingUp, MessageCircle } from "lucide-react";
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Separator } from "../components/ui/separator";
+import { Card, CardContent } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Separator } from "./ui/separator";
 
 import { DONATION_LEVELS, type CommunityPost, type DonationLevel } from "../utils/community";
 import { getUserByUid, type User } from "../utils/auth";
 import { getUserPostsByUid } from "../utils/community";
-
-// 🔽 댓글 수 계산용 Firestore import 추가
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
@@ -44,24 +42,8 @@ function formatTimeAgo(input: any): string {
   return past.toLocaleDateString("ko-KR");
 }
 
-// ---------- Components ----------
-
-// 스크린샷과 동일한 디자인의 통계 박스 (반투명 배경)
-function StatBox({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="bg-black/20 rounded-xl p-4 backdrop-blur-sm flex flex-col items-center justify-center text-white h-full min-h-[100px]">
-      <div className="flex items-center gap-2 mb-2 opacity-90">
-        {icon}
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-      <div className="text-2xl font-bold tracking-tight">{value}</div>
-    </div>
-  );
-}
-
 type Props = { userUid: string; onBack: () => void };
 
-// 🔽 댓글 수 포함된 타입
 type PostWithStats = CommunityPost & { commentsCount: number };
 
 export default function UserProfilePage({ userUid, onBack }: Props) {
@@ -69,8 +51,6 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
   const [userPosts, setUserPosts] = useState<PostWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // 🔽 전체 댓글 수
   const totalComments = userPosts.reduce((sum, p) => sum + (p.commentsCount ?? 0), 0);
 
   useEffect(() => {
@@ -159,6 +139,11 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 py-8">
       <div className="mx-auto max-w-5xl px-6 lg:px-8">
+        {/* Back Button */}
+        <Button onClick={onBack} variant="ghost" className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            커뮤니티로 돌아가기
+          </Button>
         {/* Profile Header */}
         <Card className="mb-8 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
           <CardContent className="p-8">
@@ -390,7 +375,7 @@ export default function UserProfilePage({ userUid, onBack }: Props) {
             <p className="text-center text-sm text-gray-600">
               {user.name}님은{" "}
               <strong className="text-emerald-700">
-                {totalDonation.toLocaleString()}원
+                {totalDonation.toLocaleString()}P
               </strong>
               의 기부금으로
               <br />

@@ -7,6 +7,7 @@ export type Page =
   | 'dashboard'
   | 'report'
   | 'mypage'
+  | 'user-profile'
   | 'community'
   | 'about'
   | 'partnership'

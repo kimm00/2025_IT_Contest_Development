@@ -150,20 +150,20 @@ export default function Dashboard() {
         className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-8 lg:py-12 
     min-h-[220px]"
       >
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-8 lg:mt-16">
           <h1 className="text-3xl mb-8">
-            안녕하세요, {user.email.split("@")[0]}님! 👋
+            안녕하세요, {user.name}님! 👋
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 누적 기부금 */}
+            {/* 누적 포인트 */}
             <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
               <CardHeader className="pb-4">
                 <CardDescription className="text-white/80">
-                  누적 기부금
+                  누적 포인트
                 </CardDescription>
                 <CardTitle className="text-4xl font-bold">
-                  ₩{user.totalDonation.toLocaleString()}
+                  {user.totalDonation.toLocaleString()}P
                 </CardTitle>
               </CardHeader>
 
@@ -304,7 +304,7 @@ export default function Dashboard() {
                 <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p>아직 기록이 없습니다.</p>
                 <p className="text-sm text-gray-500">
-                  첫 기록을 저장하면 100원이 기부됩니다!
+                  첫 기록을 저장하면 100P가 기부됩니다!
                 </p>
               </CardContent>
             </Card>

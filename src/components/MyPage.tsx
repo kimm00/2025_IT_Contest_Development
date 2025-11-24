@@ -190,7 +190,7 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-xl">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         마이페이지 로딩 중...
       </div>
     );
@@ -371,15 +371,15 @@ export default function MyPage() {
                   </div>
                 )}
 
-                {/* 누적 기부금 / 전체 기록 */}
+                {/* 누적 포인트 / 전체 기록 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-emerald-50 p-4 rounded-lg">
                     <div className="flex items-center gap-2 text-emerald-700 mb-1">
                       <Heart className="w-4 h-4" />
-                      <span className="text-sm">누적 기부금</span>
+                      <span className="text-sm">누적 포인트</span>
                     </div>
                     <p className="text-2xl font-semibold">
-                      ₩{user.totalDonation.toLocaleString()}
+                      {user.totalDonation.toLocaleString()}P
                     </p>
                   </div>
 
@@ -412,9 +412,9 @@ export default function MyPage() {
                 <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 rounded-xl border border-emerald-100">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <p className="text-sm text-gray-600">총 기부금</p>
+                      <p className="text-sm text-gray-600">총 포인트</p>
                       <p className="text-4xl font-semibold text-emerald-700">
-                        ₩{user.totalDonation.toLocaleString()}
+                        {user.totalDonation.toLocaleString()}P
                       </p>
                     </div>
 
@@ -427,9 +427,9 @@ export default function MyPage() {
                       <span className="text-emerald-700 font-medium">
                         {user.totalDonation >= 10000
                           ? "달성! 🎉"
-                          : `₩${(
+                          : `${(
                               10000 - user.totalDonation
-                            ).toLocaleString()} 남음`}
+                            ).toLocaleString()}P 남음`}
                       </span>
                     </div>
 

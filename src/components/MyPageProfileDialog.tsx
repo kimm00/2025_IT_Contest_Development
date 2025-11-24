@@ -200,21 +200,17 @@ export default function MyPageProfileDialog({
           수정
         </Button>
       </DialogTrigger>
-
-      {/* 🔥 폭/높이 제한 + 내부 스크롤 적용 */}
-      <DialogContent className="w-[90vw] max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>프로필 수정</DialogTitle>
           <DialogDescription>
             당뇨/고혈압 맞춤 건강 관리를 위한 정보를 입력하세요
           </DialogDescription>
         </DialogHeader>
-
-        {/* 이 div만 스크롤되게 설정 */}
-        <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2">
+        <div className="space-y-4 py-4">
           {/* 기본 신체 정보 */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">기본 신체 정보</h4>
+            <h4 className="text-sm">기본 신체 정보</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-birthYear">출생연도</Label>
@@ -223,21 +219,14 @@ export default function MyPageProfileDialog({
                   type="number"
                   placeholder="예: 1985"
                   value={formData.birthYear}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      birthYear: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setFormData({ ...formData, birthYear: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-gender">성별</Label>
                 <Select
                   value={formData.gender}
-                  onValueChange={(value: string) =>
-                    setFormData((prev) => ({ ...prev, gender: value }))
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, gender: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="선택" />
@@ -249,7 +238,6 @@ export default function MyPageProfileDialog({
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-height">키 (cm)</Label>
@@ -257,12 +245,7 @@ export default function MyPageProfileDialog({
                   id="edit-height"
                   type="number"
                   value={formData.height}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      height: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setFormData({ ...formData, height: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -271,12 +254,7 @@ export default function MyPageProfileDialog({
                   id="edit-weight"
                   type="number"
                   value={formData.weight}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      weight: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                 />
               </div>
             </div>
@@ -284,7 +262,7 @@ export default function MyPageProfileDialog({
 
           {/* 질환 관리 정보 */}
           <div className="space-y-3 pt-4 border-t">
-            <h4 className="text-sm font-medium">질환 관리 정보 ⭐</h4>
+            <h4 className="text-sm">질환 관리 정보 ⭐</h4>
             <div className="space-y-2">
               <Label>관리 중인 질환</Label>
               <div className="space-y-2">
@@ -302,9 +280,7 @@ export default function MyPageProfileDialog({
                   <Checkbox
                     id="edit-hypertension"
                     checked={formData.conditions.includes("hypertension")}
-                    onCheckedChange={() =>
-                      handleConditionToggle("hypertension")
-                    }
+                    onCheckedChange={() => handleConditionToggle("hypertension")}
                   />
                   <Label htmlFor="edit-hypertension" className="cursor-pointer">
                     💓 고혈압
@@ -314,14 +290,9 @@ export default function MyPageProfileDialog({
                   <Checkbox
                     id="edit-hyperlipidemia"
                     checked={formData.conditions.includes("hyperlipidemia")}
-                    onCheckedChange={() =>
-                      handleConditionToggle("hyperlipidemia")
-                    }
+                    onCheckedChange={() => handleConditionToggle("hyperlipidemia")}
                   />
-                  <Label
-                    htmlFor="edit-hyperlipidemia"
-                    className="cursor-pointer"
-                  >
+                  <Label htmlFor="edit-hyperlipidemia" className="cursor-pointer">
                     💊 고지혈증
                   </Label>
                 </div>
@@ -349,12 +320,7 @@ export default function MyPageProfileDialog({
                   <Label htmlFor="edit-diabetesType">당뇨 유형</Label>
                   <Select
                     value={formData.diabetesType}
-                    onValueChange={(value: string) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        diabetesType: value,
-                      }))
-                    }
+                    onValueChange={(value) => setFormData({ ...formData, diabetesType: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="선택" />
@@ -375,12 +341,7 @@ export default function MyPageProfileDialog({
                     placeholder="예: 6.5"
                     step="0.1"
                     value={formData.hba1c}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        hba1c: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => setFormData({ ...formData, hba1c: e.target.value })}
                   />
                 </div>
               </div>
@@ -401,12 +362,7 @@ export default function MyPageProfileDialog({
                       type="number"
                       placeholder="130"
                       value={formData.systolicBP}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          systolicBP: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setFormData({ ...formData, systolicBP: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -416,84 +372,60 @@ export default function MyPageProfileDialog({
                       type="number"
                       placeholder="85"
                       value={formData.diastolicBP}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          diastolicBP: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setFormData({ ...formData, diastolicBP: e.target.value })}
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 공통 추가 정보 (진단 시기 / 약물) */}
-            {!formData.conditions.includes("none") &&
-              formData.conditions.length > 0 && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-diagnosisPeriod">진단 시기</Label>
-                    <Select
-                      value={formData.diagnosisPeriod}
-                      onValueChange={(value: string) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          diagnosisPeriod: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="under1year">1년 미만</SelectItem>
-                        <SelectItem value="1to5years">1~5년</SelectItem>
-                        <SelectItem value="over5years">5년 이상</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-medicationType">약물 복용</Label>
-                    <Select
-                      value={formData.medicationType}
-                      onValueChange={(value: string) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          medicationType: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="oral">먹는 약</SelectItem>
-                        <SelectItem value="insulin">인슐린 주사</SelectItem>
-                        <SelectItem value="both">약 + 주사</SelectItem>
-                        <SelectItem value="lifestyle">
-                          운동&식이요법
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
+            {!formData.conditions.includes("none") && formData.conditions.length > 0 && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-diagnosisPeriod">진단 시기</Label>
+                  <Select
+                    value={formData.diagnosisPeriod}
+                    onValueChange={(value) => setFormData({ ...formData, diagnosisPeriod: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="under1year">1년 미만</SelectItem>
+                      <SelectItem value="1to5years">1~5년</SelectItem>
+                      <SelectItem value="over5years">5년 이상</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-medicationType">약물 복용</Label>
+                  <Select
+                    value={formData.medicationType}
+                    onValueChange={(value) => setFormData({ ...formData, medicationType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="oral">먹는 약</SelectItem>
+                      <SelectItem value="insulin">인슐린 주사</SelectItem>
+                      <SelectItem value="both">약 + 주사</SelectItem>
+                      <SelectItem value="lifestyle">운동&식이요법</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
           </div>
 
           {/* 생활 습관 */}
           <div className="space-y-3 pt-4 border-t">
-            <h4 className="text-sm font-medium">생활 습관</h4>
+            <h4 className="text-sm">생활 습관</h4>
             <div className="space-y-2">
               <Label htmlFor="edit-alcoholFrequency">음주 빈도</Label>
               <Select
                 value={formData.alcoholFrequency}
-                onValueChange={(value: string) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    alcoholFrequency: value,
-                  }))
-                }
+                onValueChange={(value) => setFormData({ ...formData, alcoholFrequency: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="선택" />
@@ -509,12 +441,7 @@ export default function MyPageProfileDialog({
               <Label htmlFor="edit-smokingStatus">흡연 상태</Label>
               <Select
                 value={formData.smokingStatus}
-                onValueChange={(value: string) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    smokingStatus: value,
-                  }))
-                }
+                onValueChange={(value) => setFormData({ ...formData, smokingStatus: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="선택" />
@@ -530,12 +457,7 @@ export default function MyPageProfileDialog({
               <Label htmlFor="edit-exerciseFrequency">운동 빈도</Label>
               <Select
                 value={formData.exerciseFrequency}
-                onValueChange={(value: string) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    exerciseFrequency: value,
-                  }))
-                }
+                onValueChange={(value) => setFormData({ ...formData, exerciseFrequency: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="선택" />
@@ -549,14 +471,8 @@ export default function MyPageProfileDialog({
               </Select>
             </div>
           </div>
-        </div>
 
-        {/* 저장 버튼은 스크롤 영역 밖에 고정 */}
-        <div className="pt-4">
-          <Button
-            onClick={handleSave}
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
-          >
+          <Button onClick={handleSave} className="w-full bg-emerald-600 hover:bg-emerald-700">
             저장
           </Button>
         </div>

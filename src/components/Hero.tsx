@@ -25,6 +25,7 @@ export default function Hero() {
             
             <p className="text-lg text-gray-700">
               개인의 건강 관리 루틴을 사회적 선행으로 연결하는
+              <br />
               <strong className="text-emerald-700"> 스마트 헬스케어 기부 챌린지 플랫폼</strong>
             </p>
             
