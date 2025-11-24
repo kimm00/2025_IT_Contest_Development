@@ -152,7 +152,7 @@ export default function Dashboard() {
       >
         <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-12 lg:mt-16">
           <h1 className="text-3xl mb-8">
-            안녕하세요, {user.email.split("@")[0]}님! 👋
+            안녕하세요, {user.name}님! 👋
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

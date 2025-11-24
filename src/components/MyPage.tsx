@@ -190,7 +190,7 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-xl">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         마이페이지 로딩 중...
       </div>
     );
