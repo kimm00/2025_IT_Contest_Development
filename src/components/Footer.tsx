@@ -50,7 +50,7 @@ export default function Footer({ onNavigate }: FooterProps = {}) {
             ❤️ 본 기부금은 <strong>아템제약</strong>의 후원으로 운영됩니다.
           </p>
           <p className="text-gray-400">
-            💡 당일 첫 건강 기록 시 100원 자동 기부 | 누적 기부금에 따라 레벨별 후원 혜택 제공
+            💡 당일 첫 건강 기록 시 100P 자동 기부 | 누적 포인트에 따라 레벨별 후원 혜택 제공
           </p>
           <p className="text-gray-500">
             HealthyKong은 의료 서비스가 아닌 건강 관리 플랫폼입니다. 

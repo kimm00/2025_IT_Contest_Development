@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { getAuth } from "firebase/auth";
 
 
-// 🔥 새로 만드는 함수 — 현재 로그인된 유저 정보 가져오기
+// 현재 로그인된 유저 정보 가져오기
 export async function getCurrentUser() {
   const auth = getAuth();
   const current = auth.currentUser;
@@ -52,20 +52,20 @@ export interface UserProfile {
   weight?: number;
 
   // 질환 / 혈당 / 혈압
-  conditions?: string[];              // ["diabetes", "hypertension", ...]
-  diabetesType?: string;              // "type1" | "type2" 등
-  diagnosisPeriod?: string;           // "under1year" | "1to5years" | ...
-  medicationType?: string;           // "oral" | "insulin" 등
+  conditions?: string[];
+  diabetesType?: string;
+  diagnosisPeriod?: string;
+  medicationType?: string;
   hba1c?: number;
   systolicBP?: number;
   diastolicBP?: number;
 
   // 생활 습관
-  alcoholFrequency?: string;         // "none" | "1to2" | ...
-  smokingStatus?: string;            // "never" | "past" | "current"
-  exerciseFrequency?: string;        // "none" | "1to2" | ...
+  alcoholFrequency?: string;
+  smokingStatus?: string;
+  exerciseFrequency?: string;
 
-  completedAt?: string;              // ISO string
+  completedAt?: string;
 }
 
 export interface User {
@@ -73,19 +73,20 @@ export interface User {
   email: string;
   name: string;
   totalDonation: number;
-  createdAt: string; // ISO string
+  createdAt: string;
   lastRecordDate: string | null;
   badges: string[];
-  profile?: UserProfile;             // 🔹 프로필 필드 추가
+  profile?: UserProfile;
 }
 
 export interface HealthLog {
-  id: string; // Firestore 문서 ID
-  userId: string; // User의 uid
+  id: string;
+  userId: string;
   type: "blood_sugar" | "blood_pressure";
   value?: number;
   systolic?: number;
   diastolic?: number;
+  measuredTime?: string;
   recordedAt: string;
 }
 
@@ -303,33 +304,28 @@ export async function addHealthLog(
       }
 
       const userData = userDoc.data() as User;
-      
-      // 💡 중요: 기부금 지급 기준은 '사용자가 입력한 날짜'가 아니라 '실제 앱을 켠 오늘' 기준입니다.
-      // (과거 데이터를 몰아서 입력해도 기부금은 '오늘 활동'에 대해서만 1번 지급하기 위함)
-      const today = new Date().toISOString().split("T")[0]; 
+      const now = new Date();
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const kstDate = new Date(now.getTime() + kstOffset);
+      const today = kstDate.toISOString().split("T")[0];
       const lastRecordDate = userData.lastRecordDate?.split("T")[0];
 
       let newTotalDonation = userData.totalDonation;
       let newLastRecordDate = userData.lastRecordDate;
 
-      // 기부금 적립 로직 (변함 없음)
+      // 기부금 적립 로직 (하루 한 번)
       if (lastRecordDate !== today) {
         newTotalDonation += 100;
         newLastRecordDate = new Date().toISOString(); // 마지막 활동 시간은 '현재'로 갱신
         wasFirstDonation = true;
       }
 
-      // 새 건강 기록 문서 생성
+      // 건강 기록 저장
       const newLogRef = doc(collection(db, "healthLogs"));
-      
       transaction.set(newLogRef, {
         userId: user.uid,
         id: newLogRef.id,
-        ...logData, // 👈 여기에 프론트엔드에서 보낸 recordedAt(선택한 날짜)이 들어있습니다.
-        
-        // ❌ 삭제됨: recordedAt: new Date().toISOString(), 
-        // 위 코드가 있으면 사용자가 선택한 날짜가 무시되고 현재 시간으로 저장됩니다.
-        // 이제 logData 안에 있는 recordedAt이 그대로 저장됩니다.
+        ...logData,
       });
 
       // 사용자 프로필 업데이트
