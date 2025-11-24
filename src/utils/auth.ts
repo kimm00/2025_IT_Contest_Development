@@ -296,51 +296,54 @@ export async function addHealthLog(
   let wasFirstDonation = false;
 
   try {
-    // 트랜잭션 시작
     await runTransaction(db, async (transaction) => {
-      // 1. 최신 사용자 프로필을 트랜잭션 내에서 읽기
       const userDoc = await transaction.get(userDocRef);
       if (!userDoc.exists()) {
         throw new Error("User profile not found!");
       }
 
       const userData = userDoc.data() as User;
-      const today = new Date().toISOString().split("T")[0];
+      
+      // 💡 중요: 기부금 지급 기준은 '사용자가 입력한 날짜'가 아니라 '실제 앱을 켠 오늘' 기준입니다.
+      // (과거 데이터를 몰아서 입력해도 기부금은 '오늘 활동'에 대해서만 1번 지급하기 위함)
+      const today = new Date().toISOString().split("T")[0]; 
       const lastRecordDate = userData.lastRecordDate?.split("T")[0];
 
       let newTotalDonation = userData.totalDonation;
       let newLastRecordDate = userData.lastRecordDate;
 
-      // 2. 기부금 적립 로직 (F-03)
+      // 기부금 적립 로직 (변함 없음)
       if (lastRecordDate !== today) {
-        newTotalDonation += 100; // 당일 첫 기록인 경우 100원 적립
-        newLastRecordDate = new Date().toISOString();
-        wasFirstDonation = true; // 2. 플래그를 true로
+        newTotalDonation += 100;
+        newLastRecordDate = new Date().toISOString(); // 마지막 활동 시간은 '현재'로 갱신
+        wasFirstDonation = true;
       }
 
-      // 3. 새 건강 기록 문서 생성 (트랜잭션)
-      const newLogRef = doc(collection(db, "healthLogs")); // 새 ID 생성
+      // 새 건강 기록 문서 생성
+      const newLogRef = doc(collection(db, "healthLogs"));
+      
       transaction.set(newLogRef, {
-        ...logData,
-        userId: user.uid, // userId 추가
-        recordedAt: new Date().toISOString(),
-        id: newLogRef.id, // HealthLog 타입이 id를 가지므로 추가
+        userId: user.uid,
+        id: newLogRef.id,
+        ...logData, // 👈 여기에 프론트엔드에서 보낸 recordedAt(선택한 날짜)이 들어있습니다.
+        
+        // ❌ 삭제됨: recordedAt: new Date().toISOString(), 
+        // 위 코드가 있으면 사용자가 선택한 날짜가 무시되고 현재 시간으로 저장됩니다.
+        // 이제 logData 안에 있는 recordedAt이 그대로 저장됩니다.
       });
 
-      // 4. 사용자 프로필 업데이트 (트랜잭션)
+      // 사용자 프로필 업데이트
       transaction.update(userDocRef, {
         totalDonation: newTotalDonation,
         lastRecordDate: newLastRecordDate,
       });
     });
 
-    // 트랜잭션 성공
-    // 3. 플래그에 따라 다른 값 반환
     return wasFirstDonation ? "first_donation" : "normal_log";
   } catch (error) {
     toast.error("기록 저장 중 오류가 발생했습니다.");
     console.error("Add Health Log Transaction Error: ", error);
-    return null; // 실패
+    return null;
   }
 }
 

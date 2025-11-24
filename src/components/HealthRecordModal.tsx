@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -18,9 +18,36 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
   const [systolic, setSystolic] = useState("");
   const [diastolic, setDiastolic] = useState("");
   const [loading, setLoading] = useState(false);
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      // YYYY-MM-DD 형식
+      const today = now.toISOString().split('T')[0];
+      // HH:MM 형식 (한국 시간 기준 보정)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const kstDate = new Date(now.getTime() + kstOffset);
+      const currentTime = kstDate.toISOString().split('T')[1].slice(0, 5);
+
+      setDate(today);
+      setTime(currentTime);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const dateTimeString = `${date}T${time}:00`;
+    const recordedAtDate = new Date(dateTimeString);
+
+    if (isNaN(recordedAtDate.getTime())) {
+      toast.error("올바른 날짜와 시간을 선택해주세요.");
+      return;
+    }
+
+    const recordedAtISO = recordedAtDate.toISOString();
 
     let logData: Omit<HealthLog, 'id' | 'userId'>;
 
@@ -33,7 +60,7 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
       logData = {
         type: 'blood_sugar',
         value,
-        recordedAt: new Date().toISOString(),
+        recordedAt: recordedAtISO,
       };
     } else {
       const sys = parseFloat(systolic);
@@ -46,7 +73,7 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
         type: 'blood_pressure',
         systolic: sys,
         diastolic: dia,
-        recordedAt: new Date().toISOString(),
+        recordedAt: recordedAtISO,
       };
     }
 
@@ -96,6 +123,29 @@ export default function HealthRecordModal({ isOpen, onClose, recordType, onSucce
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">날짜</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time">시간</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            
             {recordType === 'blood_sugar' ? (
               <div className="space-y-2">
                 <Label htmlFor="bloodSugar">혈당 수치 (mg/dL)</Label>
