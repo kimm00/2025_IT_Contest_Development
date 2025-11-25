@@ -86,7 +86,7 @@ export default function HealthRecordModal({
       const result = await addHealthLog(logData);
 
       if (result === 'first_donation') {
-        toast.success(`기록 완료! 🎉\n오늘의 첫 기록으로 100원이 기부되었습니다.`);
+        toast.success(`기록 완료! 🎉\n오늘의 첫 기록으로 100P가 기부되었습니다.`);
       } else if (result === 'normal_log') {
         toast.success("기록이 완료되었습니다!");
       }
@@ -113,8 +113,8 @@ export default function HealthRecordModal({
           </DialogTitle>
           <DialogDescription>
             {recordType === 'blood_sugar' 
-              ? '오늘의 혈당 수치를 기록하세요. 첫 기록 시 100원이 기부됩니다.' 
-              : '오늘의 혈압을 기록하세요. 첫 기록 시 100원이 기부됩니다.'}
+              ? '오늘의 혈당 수치를 기록하세요. 첫 기록 시 100P가 기부됩니다.' 
+              : '오늘의 혈압을 기록하세요. 첫 기록 시 100P가 기부됩니다.'}
           </DialogDescription>
         </DialogHeader>
 

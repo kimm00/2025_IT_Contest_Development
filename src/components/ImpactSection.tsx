@@ -1,6 +1,7 @@
 import { Card } from "./ui/card";
 import { User, Globe, DollarSign, Sprout } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import impactImage from "./assets/67c44a1bbbaedd44a3808e655e20ba2c51bd3d82.png";
 
 const impacts = [
   {
@@ -59,7 +60,7 @@ export default function ImpactSection() {
           <div className="relative">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <ImageWithFallback 
-                src="https://images.unsplash.com/photo-1727698947585-3e6703525958?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb25hdGlvbiUyMGNoYXJpdHklMjBoYW5kc3xlbnwxfHx8fDE3NjIyMzgyOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                src={impactImage}
                 alt="Donation and Charity"
                 className="w-full h-auto"
               />

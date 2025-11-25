@@ -1,11 +1,12 @@
 import { Button } from "./ui/button";
-import { Heart, ArrowRight } from "lucide-react";
+import { Heart, ArrowRight, Zap, Brain, Trophy, Gift } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Link } from "react-router-dom";
 
 export default function Hero() {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+      {/* Main Hero Section */}
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-8 items-center">
           <div className="flex flex-col gap-8">
@@ -23,13 +24,18 @@ export default function Hero() {
               <strong className="text-emerald-700">"Self-care becomes Social-care."</strong>
             </p>
             
-            <p className="text-lg text-gray-700">
-              개인의 건강 관리 루틴을 사회적 선행으로 연결하는
-              <br />
-              <strong className="text-emerald-700"> 스마트 헬스케어 기부 챌린지 플랫폼</strong>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              매일 <strong className="text-emerald-700">혈당, 혈압, 운동 등 건강 루틴을 기록</strong>하면, 
+              그 기록이 <strong className="text-emerald-700">실제 기부금으로 환산</strong>되어 사회에 환원되는 IT 헬스케어 서비스입니다.
             </p>
+
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg">
+              <p className="text-sm text-amber-800">
+                <strong>💡 </strong> 작심삼일로 끝나는 건강 관리를 <strong>게이미피케이션 & 소셜 임팩트</strong>로 해결하는 개인 맞춤형 플랫폼
+              </p>
+            </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 size="lg" 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 text-lg"
@@ -54,16 +60,16 @@ export default function Hero() {
             
             <div className="flex gap-8 pt-4">
               <div>
-                <div className="text-3xl text-emerald-600">1,247</div>
-                <div className="text-sm text-gray-600">활성 사용자</div>
+                <div className="text-3xl text-emerald-600">72%</div>
+                <div className="text-sm text-gray-600">이탈률 감소</div>
               </div>
               <div>
-                <div className="text-3xl text-emerald-600">₩2.4M</div>
-                <div className="text-sm text-gray-600">누적 기부금</div>
+                <div className="text-3xl text-emerald-600">100P</div>
+                <div className="text-sm text-gray-600">일일 최대 적립</div>
               </div>
               <div>
-                <div className="text-3xl text-emerald-600">89%</div>
-                <div className="text-sm text-gray-600">목표 달성률</div>
+                <div className="text-3xl text-emerald-600">13개</div>
+                <div className="text-sm text-gray-600">뱃지 컬렉션</div>
               </div>
             </div>
           </div>
@@ -82,8 +88,8 @@ export default function Hero() {
                   <Heart className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600">오늘의 챌린지</div>
-                  <div className="text-emerald-600">3/5 완료</div>
+                  <div className="text-sm text-gray-600">오늘의 총 적립 포인트</div>
+                  <div className="text-emerald-600">+2,400P 적립</div>
                 </div>
               </div>
             </div>
