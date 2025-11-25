@@ -5,19 +5,19 @@ const concepts = [
   {
     icon: Heart,
     title: "건강 관리",
-    description: "혈당·혈압·복용 등 건강 루틴을 챌린지화",
+    description: "혈당·혈압·운동 등 건강 루틴을 챌린지화",
     color: "text-rose-600 bg-rose-100"
   },
   {
     icon: Users,
     title: "사회 기여",
-    description: "당일 첫 기록 시 100원 기부, 레벨별 후원 혜택",
+    description: "당일 첫 기록 시 100P 기부, 레벨별 후원 혜택",
     color: "text-emerald-600 bg-emerald-100"
   },
   {
     icon: TrendingUp,
     title: "동기 부여",
-    description: "뱃지·랭킹 시스템으로 지속적 실천 유도",
+    description: "뱃지 컬렉션 수집으로 지속적 실천 유도",
     color: "text-amber-600 bg-amber-100"
   },
   {
