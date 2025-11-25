@@ -62,7 +62,7 @@ export default function AboutPage({
                 <h3 className="text-gray-900 mb-3">재미 (Fun)</h3>
                 <p className="text-gray-600">
                   건강 기록을 <strong>게임 미션</strong>처럼 수행하고 <strong>뱃지를 획득</strong>합니다. 
-                  3일 연속 성공 시 'Starter Spark', 루틴 실패 후 재도전 시 'Comeback Kid' 등 13개의 뱃지가 여러분을 기다립니다.
+                  3일 연속 성공 시 '스타터 스파크', 루틴 실패 후 재도전 시 '재기의 용사' 등 13개의 뱃지가 여러분을 기다립니다.
                 </p>
               </CardContent>
             </Card>
